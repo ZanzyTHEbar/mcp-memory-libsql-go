@@ -70,16 +70,20 @@ services:
       start_period: 5s
       retries: 30
 
-  # Optional: Ollama for local embeddings
+# Optional: Ollama for local embeddings
   ollama:
     image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
     volumes:
-      - type: bind
-        source: ./ollama_models
-        target: /root/.ollama/models
+      - 'ollama:/root/.ollama'
       - ./ollama-entrypoint.sh:/ollama-entrypoint.sh
+    healthcheck:
+      test:
+        - CMD
+        - ollama
+        - list
+      interval: 5s
+      timeout: 30s
+      retries: 10
     entrypoint: ["/bin/sh", "/ollama-entrypoint.sh"]
     restart: unless-stopped
     profiles: ["ollama"]
