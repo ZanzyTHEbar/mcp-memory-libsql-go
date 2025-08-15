@@ -63,7 +63,6 @@ services:
       timeout: 5s
       start_period: 5s
       retries: 30
-    profiles: ["memory"]
 
   # Optional: Ollama for local embeddings
   ollama:
@@ -78,17 +77,3 @@ services:
     entrypoint: ["/bin/sh", "/ollama-entrypoint.sh"]
     restart: unless-stopped
     profiles: ["ollama"]
-
-  # Optional: LocalAI (OpenAI-compatible)
-  localai:
-    image: localai/localai:latest
-    environment:
-      - MODELS_PATH=/models
-    ports:
-      - "8082:8080"
-    volumes:
-      - type: bind
-        source: ./localai_models
-        target: /models
-    restart: unless-stopped
-    profiles: ["localai"]
