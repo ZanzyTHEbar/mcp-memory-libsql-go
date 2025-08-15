@@ -187,23 +187,6 @@ compose-logs:
 compose-ps:
 	docker compose ps
 
-# Coolify-optimized targets: use docker compose (non-interactive) and focus on the `memory` service.
-.PHONY: coolify-up coolify-down coolify-logs coolify-ps coolify-run
-coolify-up: docker-build data
-	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) up --build -d memory
-
-coolify-run: coolify-up
-	@echo "Coolify: started 'memory' service"
-
-coolify-down:
-	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) down $(if $(WITH_VOLUMES),-v,)
-
-coolify-ps:
-	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) ps memory
-
-coolify-logs:
-	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) logs -f --tail=200 memory
-
 # Coolify production-style targets: separate build and run commands
 .PHONY: coolify-prod-build coolify-prod-run coolify-prod-down coolify-prod-logs coolify-prod-ps
 
