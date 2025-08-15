@@ -79,8 +79,8 @@ docker-rebuild:
 # Ensure local data directory exists
 .PHONY: data
 data:
-	mkdir -p ./data ./data/projects
-	chmod -R 777 ./data
+	mkdir -p ./data ./data/projects ./ollama_models
+	chmod -R 777 ./data ./ollama_models
 
 # Run the docker image (SSE default)
 .PHONY: docker-run
