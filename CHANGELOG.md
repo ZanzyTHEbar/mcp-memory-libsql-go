@@ -3,6 +3,13 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.3.1](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.0...v0.3.1) (2025-08-15)
+
+### 🤖 Build System
+
+* **docker:** add docker-compose configuration for memory, ollama, and localai services ([efc76bb](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/efc76bbd7aed46a9ac6c2c6ebb1fe909a5485c51))
+* **docker:** add docker-compose example file ([d20c465](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/d20c465e4ec0264def4c1fd8cd1284a301b8d70a)), closes [#39](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/issues/39)
+
 ## [0.3.0](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.2.0...v0.3.0) (2025-08-15)
 
 ### 📝 Documentation
