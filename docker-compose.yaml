@@ -46,7 +46,7 @@ services:
       ]
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
-      - "${METRICS_PORT:-9090}:${METRICS_PORT:-9090}"
+      - "${METRICS_PORT:-9090}"
     volumes:
       - type: bind
         source: ./data
@@ -56,6 +56,7 @@ services:
     healthcheck:
       test: >
         CMD-SHELL
+        curl -fsS http://127.0.0.1:${PORT:-8090}/healthz &&
         curl -fsS http://127.0.0.1:${METRICS_PORT:-9090}/healthz ||
         pgrep -x mcp-memory-libsql-go >/dev/null
       interval: 5s
