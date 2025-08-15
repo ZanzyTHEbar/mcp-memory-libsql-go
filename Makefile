@@ -198,7 +198,7 @@ coolify-prod-build: docker-build data
 coolify-prod-run:
 	@echo "Coolify: starting production-style (multi-project, SSE, auth off, ollama) (envs must be provided by environment/Coolify UI)"
 	# Rely on environment variables provided by Coolify's UI or the shell. Do NOT inline-set ENVs here.
-	docker compose --profile ollama --profile multi up -d memory
+	docker compose --profile ollama --profile multi up -d
 
 coolify-prod-down:
 	docker compose --profile ollama --profile multi down $(if $(WITH_VOLUMES),-v,)
