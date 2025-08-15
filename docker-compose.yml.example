@@ -4,6 +4,10 @@ services:
     image: mcp-memory-libsql-go:local
     build:
       context: .
+      #args:
+      #  - VERSION=${VERSION:-dev}
+      #  - REVISION=${REVISION:-dev}
+      #  - BUILD_DATE=${BUILD_DATE}
     environment:
       # Core DB
       - LIBSQL_URL=${LIBSQL_URL:-file:/data/libsql.db}
@@ -33,18 +37,6 @@ services:
       - MULTI_PROJECT_AUTH_REQUIRED=${MULTI_PROJECT_AUTH_REQUIRED}
       - MULTI_PROJECT_AUTO_INIT_TOKEN=${MULTI_PROJECT_AUTO_INIT_TOKEN}
       - MULTI_PROJECT_DEFAULT_TOKEN=${MULTI_PROJECT_DEFAULT_TOKEN}
-      # Provider specifics (all optional; set based on profile)
-      - OPENAI_API_KEY
-      - OPENAI_EMBEDDINGS_MODEL
-      - OLLAMA_HOST
-      - OLLAMA_EMBEDDINGS_MODEL
-      - GOOGLE_API_KEY
-      - GEMINI_EMBEDDINGS_MODEL
-      - VERTEX_EMBEDDINGS_ENDPOINT
-      - VERTEX_ACCESS_TOKEN
-      - LOCALAI_BASE_URL
-      - LOCALAI_EMBEDDINGS_MODEL
-      - LOCALAI_API_KEY
       # Runtime mode and misc
       - MODE=${MODE:-single} # single | multi | voyageai
       - PROJECTS_DIR=${PROJECTS_DIR:-/data/projects}
@@ -70,13 +62,13 @@ services:
     healthcheck:
       test: >
         CMD-SHELL
+        curl -fsS http://127.0.0.1:${PORT:-8090}/healthz &&
         curl -fsS http://127.0.0.1:${METRICS_PORT:-9090}/healthz ||
         pgrep -x mcp-memory-libsql-go >/dev/null
       interval: 5s
       timeout: 5s
       start_period: 5s
       retries: 30
-    profiles: ["memory"]
 
   # Optional: Ollama for local embeddings
   ollama:

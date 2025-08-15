@@ -63,7 +63,6 @@ services:
       timeout: 5s
       start_period: 5s
       retries: 30
-    profiles: ["memory"]
 
   # Optional: Ollama for local embeddings
   ollama:
