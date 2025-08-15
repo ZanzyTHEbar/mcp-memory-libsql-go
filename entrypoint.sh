@@ -21,7 +21,7 @@ fi
 
 # Determine MODE and defaults (if MODE was provided use it, else default to single)
 MODE=${MODE:-single}
-PORT=${PORT:-8080}
+PORT=${PORT}
 METRICS_PORT=${METRICS_PORT:-9090}
 PROJECTS_DIR=${PROJECTS_DIR:-/data/projects}
 
