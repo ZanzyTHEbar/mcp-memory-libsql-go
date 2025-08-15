@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.3.3](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.2...v0.3.3) (2025-08-15)
+
+### 🤖 Build System
+
+* **docker-compose:** simplify metrics port configuration and enhance healthcheck command ([97f1880](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/97f18804d8fe35a59c88a5341d821e67ae94031d))
+
 ## [0.3.2](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.1...v0.3.2) (2025-08-15)
 
 ### 🧑‍💻 Code Refactoring
