@@ -85,7 +85,7 @@ docker-run: docker-run-sse
 # Run the docker image with sse transport
 .PHONY: docker-run-sse
 docker-run-sse: data
-	docker run --rm -it $(ENV_FILE_ARG) \
+	docker run --rm $(ENV_FILE_ARG) \
 		-p $(PORT_SSE):$(PORT_SSE) -p $(PORT_METRICS):$(PORT_METRICS) \
 		-v $(shell pwd)/data:/data \
 		-e MODE=$(MODE) \
@@ -96,14 +96,14 @@ docker-run-sse: data
 # Run the docker image with stdio transport
 .PHONY: docker-run-stdio
 docker-run-stdio: data
-	docker run --rm -it $(ENV_FILE_ARG) \
+	docker run --rm $(ENV_FILE_ARG) \
 		-v $(shell pwd)/data:/data \
 		$(DOCKER_IMAGE) -transport stdio
 
 # Run the docker image with multi-project mode (SSE)
 .PHONY: docker-run-multi
 docker-run-multi: data
-	docker run --rm -it $(ENV_FILE_ARG) \
+	docker run --rm $(ENV_FILE_ARG) \
 		-p $(PORT_SSE):$(PORT_SSE) -p $(PORT_METRICS):$(PORT_METRICS) \
 		-v $(shell pwd)/data:/data \
 		-e MODE=multi \
@@ -186,6 +186,45 @@ compose-logs:
 
 compose-ps:
 	docker compose ps
+
+# Coolify-optimized targets: use docker compose (non-interactive) and focus on the `memory` service.
+.PHONY: coolify-up coolify-down coolify-logs coolify-ps coolify-run
+coolify-up: docker-build data
+	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) up --build -d memory
+
+coolify-run: coolify-up
+	@echo "Coolify: started 'memory' service"
+
+coolify-down:
+	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) down $(if $(WITH_VOLUMES),-v,)
+
+coolify-ps:
+	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) ps memory
+
+coolify-logs:
+	docker compose $(ENV_FILE_ARG) $(PROFILE_FLAGS) logs -f --tail=200 memory
+
+# Coolify production-style targets: separate build and run commands
+.PHONY: coolify-prod-build coolify-prod-run coolify-prod-down coolify-prod-logs coolify-prod-ps
+
+# Build the docker image and prepare data (no run)
+coolify-prod-build: docker-build data
+	@echo "Coolify: building image for production-style (multi-project, SSE, auth off, ollama)"
+
+# Run using existing image (separate from build)
+coolify-prod-run:
+	@echo "Coolify: starting production-style (multi-project, SSE, auth off, ollama) (envs must be provided by environment/Coolify UI)"
+	# Rely on environment variables provided by Coolify's UI or the shell. Do NOT inline-set ENVs here.
+	docker compose --profile ollama --profile multi up -d memory
+
+coolify-prod-down:
+	docker compose --profile ollama --profile multi down $(if $(WITH_VOLUMES),-v,)
+
+coolify-prod-logs:
+	docker compose --profile ollama --profile multi logs -f --tail=200 memory
+
+coolify-prod-ps:
+	docker compose --profile ollama --profile multi ps
 
 # Legacy docker-compose aliases (optional)
 .PHONY: docker-compose

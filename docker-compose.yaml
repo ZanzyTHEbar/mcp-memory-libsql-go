@@ -1,13 +1,7 @@
 services:
   # Unified memory service: single|multi|voyageai modes driven by MODE env var
   memory:
-    image: mcp-memory-libsql-go:local
-    build:
-      context: .
-      args:
-        - VERSION=${VERSION:-dev}
-        - REVISION=${REVISION:-dev}
-        - BUILD_DATE=${BUILD_DATE}
+    image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
     environment:
       # Core DB
       - LIBSQL_URL=${LIBSQL_URL:-file:/data/libsql.db}
