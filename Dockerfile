@@ -66,7 +66,7 @@ ENV LIBSQL_URL="file:/data/libsql.db" \
 
 # Volumes and ports
 VOLUME ["/data"]
-EXPOSE 8080 9090
+#EXPOSE 8080 9090
 
 # Healthcheck hits metrics healthz if enabled, otherwise process check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD curl -fsS http://127.0.0.1:9090/healthz || pgrep -x mcp-memory-libsql-go >/dev/null || exit 1
@@ -75,17 +75,17 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD curl -fsS http://
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Single DB SSE stage
-FROM base AS single-db-sse
-CMD ["-transport", "sse"]
-
-# Single DB Stdio stage
-FROM base AS single-db-stdio
-CMD ["-transport", "stdio"]
-
-# Multi-project SSE stage
-FROM base AS multi-project-sse
-CMD ["-transport", "sse", "-projects-dir", "/data/projects"]
-
-# Multi-project Stdio stage
-FROM base AS multi-project-stdio
-CMD ["-transport", "stdio", "-projects-dir", "/data/projects"]
+#FROM base AS single-db-sse
+#CMD ["-transport", "sse"]
+#
+## Single DB Stdio stage
+#FROM base AS single-db-stdio
+#CMD ["-transport", "stdio"]
+#
+## Multi-project SSE stage
+#FROM base AS multi-project-sse
+#CMD ["-transport", "sse", "-projects-dir", "/data/projects"]
+#
+## Multi-project Stdio stage
+#FROM base AS multi-project-stdio
+#CMD ["-transport", "stdio", "-projects-dir", "/data/projects"]

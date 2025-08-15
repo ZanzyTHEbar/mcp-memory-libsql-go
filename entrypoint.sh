@@ -19,15 +19,9 @@ if [ "$mode_provided" -eq 0 ]; then
     fi
 fi
 
-# Determine MODE and defaults (if MODE was provided use it, else default to single)
-MODE=${MODE:-single}
-PORT=${PORT}
-METRICS_PORT=${METRICS_PORT:-9090}
-PROJECTS_DIR=${PROJECTS_DIR:-/data/projects}
-
 # Build common args; ensure addr includes leading colon
-COMMON_ARGS=("-transport" "${TRANSPORT:-sse}" "-addr" ":${PORT}" "-sse-endpoint" "${SSE_ENDPOINT:-/sse}")
-echo "entrypoint: MODE=${MODE} PORT=${PORT} TRANSPORT=${TRANSPORT:-sse} SSE_ENDPOINT=${SSE_ENDPOINT:-/sse}" >&2
+COMMON_ARGS=("-transport" "${TRANSPORT}" "-addr" ":${PORT}" "-sse-endpoint" "${SSE_ENDPOINT}")
+echo "entrypoint: MODE=${MODE} PORT=${PORT} TRANSPORT=${TRANSPORT} SSE_ENDPOINT=${SSE_ENDPOINT}" >&2
 
 case "$MODE" in
 single)
