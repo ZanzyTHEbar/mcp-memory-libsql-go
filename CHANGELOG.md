@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.3.6](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.5...v0.3.6) (2025-08-15)
+
+### 🤖 Build System
+
+* **docker-compose:** remove ollama service configuration from docker-compose files and update Makefile for simplified service management ([bd34686](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/bd34686d0c164baf8ff5a2501f5561257b255f0c))
+
 ## [0.3.5](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.4...v0.3.5) (2025-08-15)
 
 ### 🐛 Bug Fixes
