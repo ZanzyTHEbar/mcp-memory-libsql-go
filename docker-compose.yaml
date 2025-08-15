@@ -63,19 +63,3 @@ services:
       timeout: 5s
       start_period: 5s
       retries: 30
-
-  # Optional: Ollama for local embeddings
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_models:/root/.ollama/models
-      - ./ollama-entrypoint.sh:/ollama-entrypoint.sh
-    entrypoint: ["/bin/sh", "/ollama-entrypoint.sh"]
-    restart: unless-stopped
-    profiles: ["ollama"]
-
-volumes:
-  ollama_models:
-    driver: local

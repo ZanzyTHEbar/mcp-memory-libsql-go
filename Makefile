@@ -25,8 +25,8 @@ PROFILES ?= memory
 PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
 
 # Default profiles for Coolify production run (can be overridden by COOLIFY_PROFILES)
-COOLIFY_PROFILES ?= ollama
-COOLIFY_PROFILE_FLAGS := $(foreach p,$(COOLIFY_PROFILES),--profile $(p))
+#COOLIFY_PROFILES ?= 
+#COOLIFY_PROFILE_FLAGS := $(foreach p,$(COOLIFY_PROFILES),--profile $(p))
 
 # Default target
 .PHONY: all
@@ -203,17 +203,17 @@ coolify-prod-build: docker-build data
 # Use COOLIFY_PROFILES (defaults to 'memory ollama') so both services are started by default
 coolify-prod-run:
 	@echo "Coolify: starting production-style (multi-project, SSE, auth off, ollama) (envs must be provided by environment/Coolify UI)"
-	docker compose $(COOLIFY_PROFILE_FLAGS) up -d
+	docker compose up -d
 
 coolify-prod-down:
 	@echo "Coolify: stopping production-style services"
-	docker compose $(COOLIFY_PROFILE_FLAGS) down $(if $(WITH_VOLUMES),-v,)
+	docker compose down $(if $(WITH_VOLUMES),-v,)
 
 coolify-prod-logs:
-	docker compose $(COOLIFY_PROFILE_FLAGS) logs -f --tail=200 memory
+	docker compose logs -f --tail=200 memory
 
 coolify-prod-ps:
-	docker compose $(COOLIFY_PROFILE_FLAGS) ps
+	docker compose ps
 
 # Legacy docker-compose aliases (optional)
 .PHONY: docker-compose
