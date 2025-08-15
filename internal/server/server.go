@@ -1170,6 +1170,11 @@ func (s *MCPServer) RunSSE(ctx context.Context, addr string, endpoint string) er
 	// comments/data keep intermediaries from closing the connection.
 	handler := mcp.NewSSEHandler(func(r *http.Request) *mcp.Server { return s.server })
 	mux := http.NewServeMux()
+	// Lightweight health endpoint on the main SSE server port for platform health checks
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
 	// Wrap the SSE handler to set headers that improve stability across proxies.
 	mux.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
 		// Recommended SSE headers

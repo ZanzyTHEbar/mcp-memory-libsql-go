@@ -25,7 +25,7 @@ services:
       - METRICS_PORT=${METRICS_PORT:-9090}
       # Transport / main address (container listens on PORT, host maps via ports below)
       - TRANSPORT=${TRANSPORT:-sse}
-      - PORT=${PORT:-8080}
+      - PORT=${PORT}
       - SSE_ENDPOINT=${SSE_ENDPOINT:-/sse}
       # Multi-project auth toggles
       - MULTI_PROJECT_AUTH_REQUIRED=${MULTI_PROJECT_AUTH_REQUIRED}
@@ -40,13 +40,12 @@ services:
         "-transport",
         "${TRANSPORT:-sse}",
         "-addr",
-        ":${PORT:-8080}",
+        ":${PORT}",
         "-sse-endpoint",
         "${SSE_ENDPOINT:-/sse}",
       ]
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
-      - "${METRICS_PORT:-9090}"
+      - "${PORT}:${PORT}"
     volumes:
       - type: bind
         source: ./data
@@ -56,9 +55,7 @@ services:
     healthcheck:
       test: >
         CMD-SHELL
-        curl -fsS http://127.0.0.1:${PORT:-8090}/healthz &&
-        curl -fsS http://127.0.0.1:${METRICS_PORT:-9090}/healthz ||
-        pgrep -x mcp-memory-libsql-go >/dev/null
+        curl -fsS http://127.0.0.1:${PORT}/healthz || exit 1
       interval: 5s
       timeout: 5s
       start_period: 5s
