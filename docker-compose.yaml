@@ -1,13 +1,12 @@
 services:
-  # Unified memory service: single|multi|voyageai modes driven by MODE env var
   memory:
     image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
     environment:
       # Core DB
-      - LIBSQL_URL=${LIBSQL_URL:-file:/data/libsql.db}
+      - LIBSQL_URL=${LIBSQL_URL}
       - LIBSQL_AUTH_TOKEN=${LIBSQL_AUTH_TOKEN}
       # Embeddings
-      - EMBEDDING_DIMS=${EMBEDDING_DIMS:-4}
+      - EMBEDDING_DIMS=${EMBEDDING_DIMS}
       - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER}
       - EMBEDDINGS_ADAPT_MODE=${EMBEDDINGS_ADAPT_MODE}
       # Pooling (optional)
@@ -17,35 +16,35 @@ services:
       - DB_CONN_MAX_LIFETIME_SEC=${DB_CONN_MAX_LIFETIME_SEC}
       # Hybrid (optional)
       - HYBRID_SEARCH=${HYBRID_SEARCH}
-      - HYBRID_TEXT_WEIGHT=${HYBRID_TEXT_WEIGHT:-0.4}
-      - HYBRID_VECTOR_WEIGHT=${HYBRID_VECTOR_WEIGHT:-0.6}
-      - HYBRID_RRF_K=${HYBRID_RRF_K:-60}
+      - HYBRID_TEXT_WEIGHT=${HYBRID_TEXT_WEIGHT}
+      - HYBRID_VECTOR_WEIGHT=${HYBRID_VECTOR_WEIGHT}
+      - HYBRID_RRF_K=${HYBRID_RRF_K}
       # Metrics
-      - METRICS_PROMETHEUS=${METRICS_PROMETHEUS:-true}
-      - METRICS_PORT=${METRICS_PORT:-9090}
+      - METRICS_PROMETHEUS=${METRICS_PROMETHEUS}
+      - METRICS_PORT=${METRICS_PORT}
       # Transport / main address (container listens on PORT, host maps via ports below)
-      - TRANSPORT=${TRANSPORT:-sse}
-      - PORT=${PORT}
-      - SSE_ENDPOINT=${SSE_ENDPOINT:-/sse}
+      - TRANSPORT=${TRANSPORT}
+      - PORT=8090
+      - SSE_ENDPOINT=${SSE_ENDPOINT}
       # Multi-project auth toggles
       - MULTI_PROJECT_AUTH_REQUIRED=${MULTI_PROJECT_AUTH_REQUIRED}
       - MULTI_PROJECT_AUTO_INIT_TOKEN=${MULTI_PROJECT_AUTO_INIT_TOKEN}
       - MULTI_PROJECT_DEFAULT_TOKEN=${MULTI_PROJECT_DEFAULT_TOKEN}
       # Runtime mode and misc
-      - MODE=${MODE:-single} # single | multi | voyageai
-      - PROJECTS_DIR=${PROJECTS_DIR:-/data/projects}
+      - MODE=${MODE} # single | multi | voyageai
+      - PROJECTS_DIR=${PROJECTS_DIR}
     # Command will be resolved by entrypoint; fall back to default args for compatibility
-    command:
-      [
-        "-transport",
-        "${TRANSPORT:-sse}",
-        "-addr",
-        ":${PORT}",
-        "-sse-endpoint",
-        "${SSE_ENDPOINT:-/sse}",
-      ]
+    #command:
+    #  [
+    #    "-transport",
+    #    "${TRANSPORT:-sse}",
+    #    "-addr",
+    #    ":8090",
+    #    "-sse-endpoint",
+    #    "${SSE_ENDPOINT:-/sse}",
+    #  ]
     ports:
-      - "${PORT}:${PORT}"
+      - "8090:8090"
     volumes:
       - type: bind
         source: ./data
@@ -55,7 +54,9 @@ services:
     healthcheck:
       test: >
         CMD-SHELL
-        curl -fsS http://127.0.0.1:${PORT}/healthz || exit 1
+        curl -fsS http://127.0.0.1:8090/healthz ||
+        curl -fsS http://127.0.0.1:9090/healthz ||
+        pgrep -x mcp-memory-libsql-go >/dev/null
       interval: 5s
       timeout: 5s
       start_period: 5s
