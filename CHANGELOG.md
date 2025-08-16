@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.3.8](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.7...v0.3.8) (2025-08-16)
+
+### 🤖 Build System
+
+* **fix-docker-compose:** remove default values for environment variables and update healthcheck command ([1404028](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/1404028bb5c2d4189353bffe2d683a442b6ff461))
+
 ## [0.3.7](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.6...v0.3.7) (2025-08-15)
 
 ### 🐛 Bug Fixes
