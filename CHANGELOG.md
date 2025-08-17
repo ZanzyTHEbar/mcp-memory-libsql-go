@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.4.2](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.1...v0.4.2) (2025-08-17)
+
+### 🤖 Build System
+
+* **feat-backup:** add EXCLUDE_PATTERNS and RUN_ONCE environment variables ([86291f8](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/86291f86c3f66ecf120045beb20158cd71f8a50f))
+
 ## [0.4.1](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.0...v0.4.1) (2025-08-17)
 
 ### 🐛 Bug Fixes
