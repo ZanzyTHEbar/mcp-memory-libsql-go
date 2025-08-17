@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.4.0](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.8...v0.4.0) (2025-08-17)
+
+### 📝 Documentation
+
+* add deployment notes for mcp-memory-libsql-go on Docker and Coolify ([d3171fd](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/d3171fde7f310881692b0a0a7f5a0d56e714f2aa))
+
 ## [0.3.8](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.7...v0.3.8) (2025-08-16)
 
 ### 🤖 Build System
