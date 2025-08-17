@@ -117,68 +117,7 @@ docker-run-multi: data
 .PHONY: docker-test
 docker-test: data
 	echo "Checking for existing image $(DOCKER_IMAGE)..."; \
-	# Ensure .env.ci exists if ENV_FILE isn't provided (delegate to ensure-env-ci target)
-	$(MAKE) ensure-env-ci >/dev/null 2>&1; \
-	if [ -z "$(ENV_FILE)" ]; then \
-		env_file_arg="--env-file .env.ci"; \
-	else \
-		env_file_arg="--env-file $(ENV_FILE)"; \
-	fi; \
-	if docker image inspect $(DOCKER_IMAGE) >/dev/null 2>&1; then \
-		echo "Found image $(DOCKER_IMAGE)"; \
-	else \
-		echo "Image $(DOCKER_IMAGE) not found; building..."; \
-		$(MAKE) docker-build; \
-	fi; \
-	# Check for existing container for service 'memory'
-	cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
-	started=0; \
-	if [ -n "$$cid" ]; then \
-		running=$$(docker inspect -f '{{.State.Running}}' $$cid 2>/dev/null || echo false); \
-		if [ "$$running" = "true" ]; then \
-			echo "Service 'memory' already running (container $$cid)"; \
-		else \
-			echo "Service 'memory' container exists but not running; starting..."; \
-			docker compose $$env_file_arg $(PROFILE_FLAGS) up -d memory; \
-			started=1; \
-		fi; \
-	else \
-		echo "No existing 'memory' container; starting..."; \
-		docker compose $$env_file_arg $(PROFILE_FLAGS) up -d memory; \
-		started=1; \
-	fi; \
-	# Wait for health (container health or metrics endpoint), up to 90s
-	echo "Waiting for health (up to 90s)..."; \
-	echo "Host data perms:"; ls -la ./data || true; \
-	for i in $$(seq 1 90); do \
-	  cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
-	  if [ -n "$$cid" ]; then \
-	    status=$$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' $$cid 2>/dev/null || true); \
-	    if [ "$$status" = "healthy" ]; then echo "Container reported healthy"; break; fi; \
-	  fi; \
-	  if curl -fsS http://127.0.0.1:$(PORT_METRICS)/healthz >/dev/null 2>&1; then echo "Metrics endpoint healthy"; break; fi; \
-	  sleep 1; \
-	  if [ $$i -eq 90 ]; then \
-	    echo "Health check timed out"; \
-	    echo "--- docker compose ps ---"; \
-	    docker compose $$env_file_arg $(PROFILE_FLAGS) ps; \
-	    echo "--- Recent logs (memory) ---"; \
-	    docker compose $$env_file_arg $(PROFILE_FLAGS) logs --tail=200 memory | cat; \
-	    exit 1; \
-	  fi; \
-	done; \
-	# Run integration tester against live SSE endpoint (increase timeout to 75s)
-	go run $(INTEGRATION_TESTER) -sse-url http://127.0.0.1:$(PORT_SSE)/sse -project default -timeout 75s | tee integration-report.json; \
-	# Tear down only if we started the containers
-	if [ "$$started" = "1" ]; then \
-		echo "Stopping containers brought up by test..."; \
-		docker compose $$env_file_arg $(PROFILE_FLAGS) down; \
-	else \
-		echo "Leaving existing containers running"; \
-	fi; \
-	# Audit/report
-	echo "--- Integration Test Report (integration-report.json) ---"; \
-	cat integration-report.json | jq '.' || cat integration-report.json
+	exec ./scripts/ci-docker-test.sh $(ENV_FILE)
 
 # Compose helpers
 .PHONY: compose-up compose-down compose-logs compose-ps
@@ -197,21 +136,15 @@ compose-ps:
 # Ensure .env.ci exists with safe defaults for CI
 .PHONY: ensure-env-ci
 ensure-env-ci:
-	@if [ -n "$(ENV_FILE)" ]; then \
-		echo "Using provided ENV_FILE=$(ENV_FILE) - skipping .env.ci generation"; \
-		exit 0; \
-	fi; \
-	if [ -f .env.ci ]; then \
-		echo ".env.ci already exists"; \
-		exit 0; \
-	fi; \
-	# Create .env.ci depending on MODE (avoid LIBSQL_URL in multi)
-	if [ "$(MODE)" = "multi" ]; then \
-		printf '%s\n' 'EMBEDDING_DIMS=4' 'MODE=multi' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
+	if [ -n "$(ENV_FILE)" ]; then env_target="$(ENV_FILE)"; else env_target=".env.ci"; fi; \
+	if [ -s "$$env_target" ]; then echo "Using existing $$env_target"; exit 0; fi; \
+	mode_value="$${MODE:-multi}"; \
+	if [ "$$mode_value" = "multi" ]; then \
+		printf '%s\n' "MODE=multi" "LIBSQL_URL=" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "EMBEDDINGS_PROVIDER=" "EMBEDDINGS_ADAPT_MODE=" "DB_MAX_OPEN_CONNS=16" "DB_MAX_IDLE_CONNS=8" "DB_CONN_MAX_IDLE_SEC=30" "DB_CONN_MAX_LIFETIME_SEC=60" "HYBRID_SEARCH=true" "HYBRID_TEXT_WEIGHT=0.4" "HYBRID_VECTOR_WEIGHT=0.6" "HYBRID_RRF_K=60" "METRICS_PROMETHEUS=true" "METRICS_PORT=9090" "TRANSPORT=sse" "PROJECTS_DIR=/data/projects" "PORT=8090" "SSE_ENDPOINT=/sse" "MULTI_PROJECT_AUTH_REQUIRED=false" "MULTI_PROJECT_AUTO_INIT_TOKEN=true" "MULTI_PROJECT_DEFAULT_TOKEN=ci-token" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
 	else \
-		printf '%s\n' 'LIBSQL_URL=file:/data/libsql.db' 'EMBEDDING_DIMS=4' 'MODE=single' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
+		printf '%s\n' "MODE=single" "LIBSQL_URL=file:/data/libsql.db" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "PROJECTS_DIR=/data/projects" "PORT=8090" "METRICS_PORT=9090" "SSE_ENDPOINT=/sse" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
 	fi; \
-	@echo "Wrote .env.ci";
+	echo "Wrote $$env_target";
 
 # Coolify production-style targets: separate build and run commands
 .PHONY: coolify-prod-build coolify-prod-run coolify-prod-down coolify-prod-logs coolify-prod-ps

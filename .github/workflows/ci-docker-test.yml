@@ -40,7 +40,10 @@ jobs:
       - name: Create CI env file
         run: |
           cat > .env.ci <<'EOF'
+          # CI env - run in multi-project mode and avoid creating a shared local DB file
+          LIBSQL_URL=
           LIBSQL_AUTH_TOKEN=
+          EMBEDDING_DIMS=4
           EMBEDDINGS_PROVIDER=
           EMBEDDINGS_ADAPT_MODE=
           DB_MAX_OPEN_CONNS=16
@@ -54,6 +57,8 @@ jobs:
           METRICS_PROMETHEUS=true
           METRICS_PORT=9090
           TRANSPORT=sse
+          MODE=multi
+          PROJECTS_DIR=/data/projects
           PORT=8080
           SSE_ENDPOINT=/sse
           MULTI_PROJECT_AUTH_REQUIRED=false
@@ -63,11 +68,18 @@ jobs:
           EOF
 
       # Build and run full docker test (Makefile handles profiles and healthcheck)
-      - name: Run Makefile docker-test
-        run: make docker-test ENV_FILE=.env.ci
+      - name: Run CI docker test script
+        run: ./scripts/ci-docker-test.sh .env.ci
         env:
           PORT_SSE: ${{ env.PORT_SSE }}
           PORT_METRICS: ${{ env.PORT_METRICS }}
           PROFILES: ${{ env.PROFILES }}
           # ensure world-writable data dir in CI for container user
           UMASK: "000"
+
+      - name: Upload integration report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-report
+          path: integration-report.json

@@ -44,7 +44,8 @@ services:
     #    "${SSE_ENDPOINT:-/sse}",
     #  ]
     ports:
-      - "8090:8090"
+      # Map host port from env (PORT) if provided via --env-file; default to 8090
+      - "${PORT:-8090}:8090"
     volumes:
       - type: bind
         source: ./data
