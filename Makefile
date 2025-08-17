@@ -122,24 +122,9 @@ docker-test: data
 		if [ ! -f .env.ci ]; then \
 			# Create .env.ci. Do NOT set a global /data/libsql.db when running in multi mode.
 			if [ "$(MODE)" = "multi" ]; then \
-				cat > .env.ci <<'EOF'
-	EMBEDDING_DIMS=4
-	MODE=multi
-	PROJECTS_DIR=/data/projects
-	PORT=8090
-	METRICS_PORT=9090
-	SSE_ENDPOINT=/sse
-	EOF
-					else \
-						cat > .env.ci <<'EOF'
-	LIBSQL_URL=file:/data/libsql.db
-	EMBEDDING_DIMS=4
-	MODE=single
-	PROJECTS_DIR=/data/projects
-	PORT=8090
-	METRICS_PORT=9090
-	SSE_ENDPOINT=/sse
-	EOF
+				printf '%s\n' 'EMBEDDING_DIMS=4' 'MODE=multi' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
+			else \
+				printf '%s\n' 'LIBSQL_URL=file:/data/libsql.db' 'EMBEDDING_DIMS=4' 'MODE=single' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
 			fi; \
 		fi; \
 		env_file_arg="--env-file .env.ci"; \
