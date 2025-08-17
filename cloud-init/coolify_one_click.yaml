@@ -1,0 +1,41 @@
+# Cloud-init template for one-click deployment on a fresh Ubuntu host
+# - installs Docker and Docker Compose
+# - creates host directories for Coolify bind mounts
+# - writes a docker-compose file and starts the stack
+
+#cloud-config
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+write_files:
+  - path: /opt/mcp-memory/deploy/docker-compose.yml
+    content: |
+      version: "3.8"
+      services:
+        memory:
+          image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
+          environment:
+            - MODE=multi
+            - PROJECTS_DIR=/data/projects
+            - PROJECTS_UID=1000
+            - PROJECTS_GID=1000
+          ports:
+            - "8090:8090"
+          volumes:
+            - /data/coolify/applications/<id>:/data
+          restart: unless-stopped
+
+runcmd:
+  - [bash, -lc, "set -euo pipefail"]
+  - [bash, -lc, "curl -fsSL https://get.docker.com | sh"]
+  - [
+      bash,
+      -lc,
+      "mkdir -p /data/coolify/applications/<id> /data/coolify/backups/<id> /opt/mcp-memory/deploy",
+    ]
+  - [bash, -lc, "apt-get update && apt-get install -y docker-compose-plugin"]
+  - [bash, -lc, "cd /opt/mcp-memory/deploy && docker compose up -d"]

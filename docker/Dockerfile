@@ -25,18 +25,29 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath \
 # Base final stage with shared runtime configuration (glibc)
 FROM debian:bookworm-slim AS base
 
-RUN groupadd --system app && useradd --system --gid app --home /app --shell /usr/sbin/nologin app
+# Allow pinning the runtime UID/GID for the unprivileged `app` user at build
+# time. Defaults to 1000/1000 which matches most Linux desktop users.
+ARG APP_UID=1000
+ARG APP_GID=1000
+
+# Create the app group/user with the provided IDs so host/containers can
+# share predictable ownership (useful for backups and host integration).
+RUN groupadd --gid ${APP_GID} app || true && \
+    useradd --system --uid ${APP_UID} --gid app --home /app --shell /usr/sbin/nologin app || true
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates tzdata curl procps && \
+    ca-certificates tzdata curl procps gosu acl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /out/mcp-memory-libsql-go /usr/local/bin/mcp-memory-libsql-go
 # copy entrypoint and make executable (keep ownership change after)
 COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-USER app
+# Do not switch to the unprivileged user here so the entrypoint can
+# create and chown bind-mounted paths (like /data/projects) at startup.
+# The entrypoint will drop privileges to the `app` user when starting the
+# service process.
 
 # Default environment variables
 ENV LIBSQL_URL="file:/data/libsql.db" \
@@ -66,7 +77,7 @@ ENV LIBSQL_URL="file:/data/libsql.db" \
 
 # Volumes and ports
 VOLUME ["/data"]
-EXPOSE 8080 9090
+#EXPOSE 8080 9090
 
 # Healthcheck hits metrics healthz if enabled, otherwise process check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD curl -fsS http://127.0.0.1:9090/healthz || pgrep -x mcp-memory-libsql-go >/dev/null || exit 1
@@ -75,17 +86,19 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD curl -fsS http://
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Single DB SSE stage
-FROM base AS single-db-sse
-CMD ["-transport", "sse"]
+#FROM base AS single-db-sse
+#CMD ["-transport", "sse"]
+#
+## Single DB Stdio stage
+#FROM base AS single-db-stdio
+#CMD ["-transport", "stdio"]
+#
+## Multi-project SSE stage
+#FROM base AS multi-project-sse
+#CMD ["-transport", "sse", "-projects-dir", "/data/projects"]
+#
+## Multi-project Stdio stage
+#FROM base AS multi-project-stdio
+#CMD ["-transport", "stdio", "-projects-dir", "/data/projects"]
 
-# Single DB Stdio stage
-FROM base AS single-db-stdio
-CMD ["-transport", "stdio"]
 
-# Multi-project SSE stage
-FROM base AS multi-project-sse
-CMD ["-transport", "sse", "-projects-dir", "/data/projects"]
-
-# Multi-project Stdio stage
-FROM base AS multi-project-stdio
-CMD ["-transport", "stdio", "-projects-dir", "/data/projects"]

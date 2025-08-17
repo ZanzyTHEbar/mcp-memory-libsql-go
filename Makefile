@@ -66,7 +66,7 @@ docker-build:
 		--build-arg VERSION=$(VERSION) \
 		--build-arg REVISION=$(REVISION) \
 		--build-arg BUILD_DATE=$(BUILD_DATE) \
-		-t $(DOCKER_IMAGE) .
+		-t $(DOCKER_IMAGE) -f docker/Dockerfile .
 
 .PHONY: docker-rebuild
 docker-rebuild:

@@ -1,0 +1,12 @@
+[remote]
+type = s3
+provider = AWS
+env_auth = true
+bucket = my-bucket
+region = us-east-1
+
+# Note: this is a placeholder example. Do NOT commit real credentials.
+# In production, store rclone config in your platform secret store and mount
+# it into the container as ./rclone.conf or pass path via RCLONE_CONFIG_PATH.
+
+

@@ -1,0 +1,31 @@
+services:
+  backup:
+    build:
+      context: .
+      dockerfile: docker/backup/Dockerfile
+    environment:
+      - DATA_DIR=/data
+      - BACKUP_DIR=/backup
+      - RETENTION=24
+      - SLEEP_SECONDS=3600
+      - RCLONE_REMOTE=
+      - RCLONE_CONFIG_PATH=/etc/rclone/rclone.conf
+    volumes:
+      - type: bind
+        # Backup reads the same repo-local data path (only ./data is allowed)
+        source: ./data
+        target: /data
+        bind:
+          create_host_path: true
+      - type: bind
+        # Backup files are stored under the repo at ./data/backups
+        source: ./data/backups
+        target: /backup
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./rclone.conf
+        target: /etc/rclone/rclone.conf
+        bind:
+          create_host_path: true
+    restart: unless-stopped
