@@ -2,7 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
