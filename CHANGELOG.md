@@ -3,6 +3,25 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.4.1](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.0...v0.4.1) (2025-08-17)
+
+### 🐛 Bug Fixes
+
+* **prompts:** normalize nil slice fields when registering prompts to avoid JSON nulls ([f230f81](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/f230f8100e2c009b39cc283d38537a0c7e8abe1a))
+
+### 🧑‍💻 Code Refactoring
+
+* **Makefile:** add ensure-env-ci target for .env.ci management ([6b21616](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/6b216160940a9708c266fb2c43ad78dfcf28ce15))
+* **Makefile:** enhance .env.ci creation for multi mode ([ef977a9](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/ef977a9dff8e0feabfae80e9d375a8c7d4258236))
+* **prompts_test:** remove unused variable in collectPrompts function ([59d0fdb](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/59d0fdbf038f022dcecee4cca2dcd3ce323f5fbd))
+* **loader:** replace ioutil with os package for reading directories and files ([0b845ce](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/0b845ce0f8b7dba87a6bf6442731cceda0990099))
+* **Makefile:** simplify .env.ci file creation using printf ([e10dec8](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/e10dec890082a8b8da30db1494760b9127f0fe53))
+* **Makefile:** streamline docker-test target and enhance health check procedures ([221e99b](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/221e99bcb71408a5e731af737ebc190a4246c86b))
+
+### 🔁 Continuous Integration
+
+* use dedicated script for docker-test; upload integration report on failure ([c78db74](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/c78db74bada739f2153bf9160c4e10e1279bcffc))
+
 ## [0.4.0](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.3.8...v0.4.0) (2025-08-17)
 
 ### 📝 Documentation
