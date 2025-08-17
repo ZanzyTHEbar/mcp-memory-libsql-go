@@ -1,5 +1,0 @@
-docker build \
-	--build-arg VERSION=v0.3.8-dirty \
-	--build-arg REVISION=1884cbe2490230b0977a454c51008ece4a535762 \
-	--build-arg BUILD_DATE=2025-08-17T11:11:38Z \
-	-t mcp-memory-libsql-go:local -f docker/Dockerfile .
