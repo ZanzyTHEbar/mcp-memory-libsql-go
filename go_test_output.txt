@@ -1,9 +1,0 @@
-	github.com/ZanzyTHEbar/mcp-memory-libsql-go/cmd/integration-tester		coverage: 0.0% of statements
-	github.com/ZanzyTHEbar/mcp-memory-libsql-go/cmd/mcp-memory-libsql-go		coverage: 0.0% of statements
-?   	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype	[no test files]
-?   	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/buildinfo	[no test files]
-ok  	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/database	1.078s	coverage: 54.9% of statements
-	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/embeddings		coverage: 0.0% of statements
-	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics		coverage: 0.0% of statements
-ok  	github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/server	2.024s	coverage: 42.2% of statements
-	github.com/ZanzyTHEbar/mcp-memory-libsql-go/pkg/memory		coverage: 0.0% of statements
