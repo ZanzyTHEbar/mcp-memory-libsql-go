@@ -120,7 +120,18 @@ docker-run-multi: data
 		# Prepare env-file for compose: prefer user-supplied ENV_FILE, otherwise ensure .env.ci exists and use it
 		if [ -z "$(ENV_FILE)" ]; then \
 			if [ ! -f .env.ci ]; then \
-				cat > .env.ci <<'EOF'
+				# Create .env.ci. Do NOT set a global /data/libsql.db when running in multi mode.
+				if [ "$(MODE)" = "multi" ]; then \
+					cat > .env.ci <<'EOF'
+EMBEDDING_DIMS=4
+MODE=multi
+PROJECTS_DIR=/data/projects
+PORT=8090
+METRICS_PORT=9090
+SSE_ENDPOINT=/sse
+EOF
+				else \
+					cat > .env.ci <<'EOF'
 LIBSQL_URL=file:/data/libsql.db
 EMBEDDING_DIMS=4
 MODE=single
@@ -129,6 +140,7 @@ PORT=8090
 METRICS_PORT=9090
 SSE_ENDPOINT=/sse
 EOF
+				fi; \
 			fi; \
 			env_file_arg="--env-file .env.ci"; \
 		else \
