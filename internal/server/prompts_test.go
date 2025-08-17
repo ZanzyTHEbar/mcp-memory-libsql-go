@@ -51,7 +51,6 @@ func collectPrompts(v reflect.Value, seen map[uintptr]bool) []*mcp.Prompt {
 			}
 			out = append(out, collectPrompts(f, seen)...)
 		}
-		_ = typ
 	case reflect.Slice, reflect.Array:
 		for i := 0; i < v.Len(); i++ {
 			out = append(out, collectPrompts(v.Index(i), seen)...)
