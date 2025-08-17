@@ -30,7 +30,6 @@ func collectPrompts(v reflect.Value, seen map[uintptr]bool) []*mcp.Prompt {
 
 	switch v.Kind() {
 	case reflect.Struct:
-		typ := v.Type()
 		// If this is an mcp.Prompt value
 		if v.Type() == reflect.TypeOf(mcp.Prompt{}) {
 			if v.CanAddr() {
