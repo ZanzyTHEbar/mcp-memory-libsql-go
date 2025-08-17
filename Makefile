@@ -113,94 +113,94 @@ docker-run-multi: data
 
 # End-to-end docker test workflow
 ## Silence command echoing for docker-test target while still printing our own echoes
-	.SILENT: docker-test
-	.PHONY: docker-test
-	docker-test: data
-		echo "Checking for existing image $(DOCKER_IMAGE)..."; \
-		# Prepare env-file for compose: prefer user-supplied ENV_FILE, otherwise ensure .env.ci exists and use it
-		if [ -z "$(ENV_FILE)" ]; then \
-			if [ ! -f .env.ci ]; then \
-				# Create .env.ci. Do NOT set a global /data/libsql.db when running in multi mode.
-				if [ "$(MODE)" = "multi" ]; then \
-					cat > .env.ci <<'EOF'
-EMBEDDING_DIMS=4
-MODE=multi
-PROJECTS_DIR=/data/projects
-PORT=8090
-METRICS_PORT=9090
-SSE_ENDPOINT=/sse
-EOF
-				else \
-					cat > .env.ci <<'EOF'
-LIBSQL_URL=file:/data/libsql.db
-EMBEDDING_DIMS=4
-MODE=single
-PROJECTS_DIR=/data/projects
-PORT=8090
-METRICS_PORT=9090
-SSE_ENDPOINT=/sse
-EOF
-				fi; \
+.SILENT: docker-test
+.PHONY: docker-test
+docker-test: data
+	echo "Checking for existing image $(DOCKER_IMAGE)..."; \
+	# Prepare env-file for compose: prefer user-supplied ENV_FILE, otherwise ensure .env.ci exists and use it
+	if [ -z "$(ENV_FILE)" ]; then \
+		if [ ! -f .env.ci ]; then \
+			# Create .env.ci. Do NOT set a global /data/libsql.db when running in multi mode.
+			if [ "$(MODE)" = "multi" ]; then \
+				cat > .env.ci <<'EOF'
+	EMBEDDING_DIMS=4
+	MODE=multi
+	PROJECTS_DIR=/data/projects
+	PORT=8090
+	METRICS_PORT=9090
+	SSE_ENDPOINT=/sse
+	EOF
+					else \
+						cat > .env.ci <<'EOF'
+	LIBSQL_URL=file:/data/libsql.db
+	EMBEDDING_DIMS=4
+	MODE=single
+	PROJECTS_DIR=/data/projects
+	PORT=8090
+	METRICS_PORT=9090
+	SSE_ENDPOINT=/sse
+	EOF
 			fi; \
-			env_file_arg="--env-file .env.ci"; \
-		else \
-			env_file_arg="--env-file $(ENV_FILE)"; \
 		fi; \
-		if docker image inspect $(DOCKER_IMAGE) >/dev/null 2>&1; then \
-			echo "Found image $(DOCKER_IMAGE)"; \
+		env_file_arg="--env-file .env.ci"; \
+	else \
+		env_file_arg="--env-file $(ENV_FILE)"; \
+	fi; \
+	if docker image inspect $(DOCKER_IMAGE) >/dev/null 2>&1; then \
+		echo "Found image $(DOCKER_IMAGE)"; \
+	else \
+		echo "Image $(DOCKER_IMAGE) not found; building..."; \
+		$(MAKE) docker-build; \
+	fi; \
+	# Check for existing container for service 'memory'
+	cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
+	started=0; \
+	if [ -n "$$cid" ]; then \
+		running=$$(docker inspect -f '{{.State.Running}}' $$cid 2>/dev/null || echo false); \
+		if [ "$$running" = "true" ]; then \
+			echo "Service 'memory' already running (container $$cid)"; \
 		else \
-			echo "Image $(DOCKER_IMAGE) not found; building..."; \
-			$(MAKE) docker-build; \
-		fi; \
-		# Check for existing container for service 'memory'
-		cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
-		started=0; \
-		if [ -n "$$cid" ]; then \
-			running=$$(docker inspect -f '{{.State.Running}}' $$cid 2>/dev/null || echo false); \
-			if [ "$$running" = "true" ]; then \
-				echo "Service 'memory' already running (container $$cid)"; \
-			else \
-				echo "Service 'memory' container exists but not running; starting..."; \
-				docker compose $$env_file_arg $(PROFILE_FLAGS) up -d memory; \
-				started=1; \
-			fi; \
-		else \
-			echo "No existing 'memory' container; starting..."; \
+			echo "Service 'memory' container exists but not running; starting..."; \
 			docker compose $$env_file_arg $(PROFILE_FLAGS) up -d memory; \
 			started=1; \
 		fi; \
-		# Wait for health (container health or metrics endpoint), up to 90s
-		echo "Waiting for health (up to 90s)..."; \
-		echo "Host data perms:"; ls -la ./data || true; \
-		for i in $$(seq 1 90); do \
-		  cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
-		  if [ -n "$$cid" ]; then \
-		    status=$$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' $$cid 2>/dev/null || true); \
-		    if [ "$$status" = "healthy" ]; then echo "Container reported healthy"; break; fi; \
-		  fi; \
-		  if curl -fsS http://127.0.0.1:$(PORT_METRICS)/healthz >/dev/null 2>&1; then echo "Metrics endpoint healthy"; break; fi; \
-		  sleep 1; \
-		  if [ $$i -eq 90 ]; then \
-		    echo "Health check timed out"; \
-		    echo "--- docker compose ps ---"; \
-		    docker compose $$env_file_arg $(PROFILE_FLAGS) ps; \
-		    echo "--- Recent logs (memory) ---"; \
-		    docker compose $$env_file_arg $(PROFILE_FLAGS) logs --tail=200 memory | cat; \
-		    exit 1; \
-		  fi; \
-		done; \
-		# Run integration tester against live SSE endpoint (increase timeout to 75s)
-		go run $(INTEGRATION_TESTER) -sse-url http://127.0.0.1:$(PORT_SSE)/sse -project default -timeout 75s | tee integration-report.json; \
-		# Tear down only if we started the containers
-		if [ "$$started" = "1" ]; then \
-			echo "Stopping containers brought up by test..."; \
-			docker compose $$env_file_arg $(PROFILE_FLAGS) down; \
-		else \
-			echo "Leaving existing containers running"; \
-		fi; \
-		# Audit/report
-		echo "--- Integration Test Report (integration-report.json) ---"; \
-		cat integration-report.json | jq '.' || cat integration-report.json
+	else \
+		echo "No existing 'memory' container; starting..."; \
+		docker compose $$env_file_arg $(PROFILE_FLAGS) up -d memory; \
+		started=1; \
+	fi; \
+	# Wait for health (container health or metrics endpoint), up to 90s
+	echo "Waiting for health (up to 90s)..."; \
+	echo "Host data perms:"; ls -la ./data || true; \
+	for i in $$(seq 1 90); do \
+	  cid=$$(docker compose $$env_file_arg $(PROFILE_FLAGS) ps -q memory 2>/dev/null || true); \
+	  if [ -n "$$cid" ]; then \
+	    status=$$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' $$cid 2>/dev/null || true); \
+	    if [ "$$status" = "healthy" ]; then echo "Container reported healthy"; break; fi; \
+	  fi; \
+	  if curl -fsS http://127.0.0.1:$(PORT_METRICS)/healthz >/dev/null 2>&1; then echo "Metrics endpoint healthy"; break; fi; \
+	  sleep 1; \
+	  if [ $$i -eq 90 ]; then \
+	    echo "Health check timed out"; \
+	    echo "--- docker compose ps ---"; \
+	    docker compose $$env_file_arg $(PROFILE_FLAGS) ps; \
+	    echo "--- Recent logs (memory) ---"; \
+	    docker compose $$env_file_arg $(PROFILE_FLAGS) logs --tail=200 memory | cat; \
+	    exit 1; \
+	  fi; \
+	done; \
+	# Run integration tester against live SSE endpoint (increase timeout to 75s)
+	go run $(INTEGRATION_TESTER) -sse-url http://127.0.0.1:$(PORT_SSE)/sse -project default -timeout 75s | tee integration-report.json; \
+	# Tear down only if we started the containers
+	if [ "$$started" = "1" ]; then \
+		echo "Stopping containers brought up by test..."; \
+		docker compose $$env_file_arg $(PROFILE_FLAGS) down; \
+	else \
+		echo "Leaving existing containers running"; \
+	fi; \
+	# Audit/report
+	echo "--- Integration Test Report (integration-report.json) ---"; \
+	cat integration-report.json | jq '.' || cat integration-report.json
 
 # Compose helpers
 .PHONY: compose-up compose-down compose-logs compose-ps
