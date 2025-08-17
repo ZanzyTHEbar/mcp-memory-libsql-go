@@ -6,6 +6,8 @@ services:
     environment:
       - DATA_DIR=/data
       - BACKUP_DIR=/backup
+      - EXCLUDE_PATTERNS=${EXCLUDE_PATTERNS:-backups}
+      - RUN_ONCE=${RUN_ONCE:-false}
       - RETENTION=24
       - SLEEP_SECONDS=3600
       - RCLONE_REMOTE=

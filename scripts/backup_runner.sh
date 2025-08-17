@@ -12,6 +12,7 @@ SLEEP_SECONDS=${SLEEP_SECONDS:-3600}
 RCLONE_REMOTE=${RCLONE_REMOTE:-}
 RUN_ONCE=${RUN_ONCE:-false}
 RCLONE_CONFIG_PATH=${RCLONE_CONFIG_PATH:-}
+EXCLUDE_PATTERNS=${EXCLUDE_PATTERNS:-backups}
 
 mkdir -p "${BACKUP_DIR}"
 
@@ -19,8 +20,23 @@ while true; do
     TS=$(date +%Y%m%d%H%M%S)
     FNAME="backup-${TS}.tgz"
     echo "backup: creating ${BACKUP_DIR}/${FNAME} from ${DATA_DIR}"
-    tar -czf "${BACKUP_DIR}/${FNAME}" -C "${DATA_DIR}" .
+
+    # Build tar --exclude args from EXCLUDE_PATTERNS (space-separated)
+    IFS=' ' read -r -a _patterns <<<"${EXCLUDE_PATTERNS}"
+    _exclude_args=()
+    for _p in "${_patterns[@]}"; do
+        # Exclude relative paths inside the tar (prefix with ./)
+        _exclude_args+=("--exclude=./${_p}")
+    done
+
+    echo "backup: excluding patterns: ${EXCLUDE_PATTERNS}"
+    tar -czf "${BACKUP_DIR}/${FNAME}" -C "${DATA_DIR}" "${_exclude_args[@]}" .
     echo "backup: created ${FNAME}"
+    # Log archive size (human-readable)
+    if command -v du >/dev/null 2>&1; then
+        echo -n "backup: archive size: "
+        du -sh "${BACKUP_DIR}/${FNAME}" || true
+    fi
 
     # Rotation: keep only the newest $RETENTION files
     ls -1t "${BACKUP_DIR}"/backup-*.tgz 2>/dev/null | tail -n +$((RETENTION + 1)) | xargs -r rm -f || true
