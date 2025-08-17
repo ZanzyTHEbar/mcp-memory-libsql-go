@@ -14,7 +14,7 @@ import (
 // frontmatter.input.schema keys to PromptArgument entries.
 func LoadDotPrompts(dir string) ([]*mcp.Prompt, error) {
 	var out []*mcp.Prompt
-	entries, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +25,7 @@ func LoadDotPrompts(dir string) ([]*mcp.Prompt, error) {
 		if filepath.Ext(e.Name()) != ".prompt" {
 			continue
 		}
-		b, err := ioutil.ReadFile(filepath.Join(dir, e.Name()))
+		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
 		if err != nil {
 			return nil, err
 		}

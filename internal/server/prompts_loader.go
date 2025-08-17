@@ -12,7 +12,7 @@ import (
 // Each file should contain a JSON representation of mcp.Prompt.
 func LoadExternalPrompts(dir string) ([]*mcp.Prompt, error) {
 	var out []*mcp.Prompt
-	entries, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func LoadExternalPrompts(dir string) ([]*mcp.Prompt, error) {
 		if filepath.Ext(name) != ".json" {
 			continue
 		}
-		b, err := ioutil.ReadFile(filepath.Join(dir, name))
+		b, err := os.ReadFile(filepath.Join(dir, name))
 		if err != nil {
 			return nil, err
 		}
