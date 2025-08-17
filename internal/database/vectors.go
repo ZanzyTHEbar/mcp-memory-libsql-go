@@ -5,13 +5,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 )
 
 // vectorZeroString builds a zero vector string for current embedding dims
@@ -55,7 +55,7 @@ func (dm *DBManager) vectorToString(numbers []float32) (string, error) {
 	sanitizedNumbers := make([]float32, len(numbers))
 	for i, n := range numbers {
 		if math.IsNaN(float64(n)) || math.IsInf(float64(n), 0) {
-			log.Printf("Invalid vector value detected, using 0.0 instead of: %f", n)
+			logging.Warnf("Invalid vector value detected, using 0.0 instead of: %f", n)
 			sanitizedNumbers[i] = 0.0
 		} else {
 			sanitizedNumbers[i] = n
@@ -164,7 +164,7 @@ func coerceToFloat32Slice(value interface{}) ([]float32, bool, error) {
 		return out, true, nil
 	}
 
-	// Try reflection for other slice/array kinds
+	// Try reflection for other slice/array kinds - this is slower, but more flexible
 	rv := reflect.ValueOf(value)
 	if rv.IsValid() && (rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array) {
 		n := rv.Len()

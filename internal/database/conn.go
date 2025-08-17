@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	_ "github.com/tursodatabase/go-libsql"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/embeddings"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 )
 
@@ -146,7 +146,7 @@ func (dm *DBManager) getDB(projectName string) (*sql.DB, error) {
 	dm.mu.Unlock()
 	// After schema/init, reconcile embedding dims with existing DB to avoid env drift.
 	if dbDims := detectDBEmbeddingDims(newDb); dbDims > 0 && dbDims != dm.config.EmbeddingDims {
-		log.Printf("Embedding dims mismatch: DB=%d, Config=%d. Adopting DB dims to preserve compatibility.", dbDims, dm.config.EmbeddingDims)
+		logging.Warnf("Embedding dims mismatch: DB=%d, Config=%d. Adopting DB dims to preserve compatibility.", dbDims, dm.config.EmbeddingDims)
 		dm.config.EmbeddingDims = dbDims
 		// Re-wrap provider to match DB dims (pad/truncate policy via env)
 		if dm.provider != nil && dm.provider.Dimensions() != dbDims {

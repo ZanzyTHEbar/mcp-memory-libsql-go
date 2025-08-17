@@ -3,10 +3,10 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 )
 
@@ -33,17 +33,17 @@ func (dm *DBManager) GetRecentEntities(ctx context.Context, projectName string, 
 		var name, entityType string
 		var embeddingBytes []byte
 		if err := rows.Scan(&name, &entityType, &embeddingBytes); err != nil {
-			log.Printf("Warning: Failed to scan recent entity row: %v", err)
+			logging.Warnf("Warning: Failed to scan recent entity row: %v", err)
 			continue
 		}
 		observations, err := dm.getEntityObservations(ctx, projectName, name)
 		if err != nil {
-			log.Printf("Warning: Failed to get observations for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to get observations for entity %q: %v", name, err)
 			continue
 		}
 		vector, err := dm.ExtractVector(ctx, embeddingBytes)
 		if err != nil {
-			log.Printf("Warning: Failed to extract vector for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to extract vector for entity %q: %v", name, err)
 			continue
 		}
 		entities = append(entities, apptype.Entity{

@@ -3,13 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/buildinfo"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/database"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 	"github.com/modelcontextprotocol/go-sdk/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -23,6 +24,8 @@ const defaultProject = "default"
 type MCPServer struct {
 	server *mcp.Server
 	db     *database.DBManager
+	// SSE client counter
+	sseClients int32
 }
 
 // logToolError emits a consistent, low-cardinality structured log line for tool failures.
@@ -32,7 +35,7 @@ func logToolError(tool string, project string, err error) {
 		return
 	}
 	// Note: avoid including dynamic high-cardinality values beyond tool/project.
-	log.Printf("level=error tool=%s project=%s msg=tool_failed error=%q", tool, project, err.Error())
+	logging.Errorf("tool=%s project=%s msg=tool_failed error=%q", tool, project, err.Error())
 }
 
 // NewMCPServer creates a new MCP server
@@ -1189,6 +1192,9 @@ func (s *MCPServer) RunSSE(ctx context.Context, addr string, endpoint string) er
 		// and long-lived idle periods.
 		flusher, _ := w.(http.Flusher)
 		doneCh := make(chan struct{})
+		// increment client count
+		atomic.AddInt32(&s.sseClients, 1)
+		defer atomic.AddInt32(&s.sseClients, -1)
 		go func() {
 			ticker := time.NewTicker(15 * time.Second)
 			defer ticker.Stop()
@@ -1226,6 +1232,6 @@ func (s *MCPServer) RunSSE(ctx context.Context, addr string, endpoint string) er
 		_ = srv.Shutdown(shutdownCtx)
 	}()
 
-	log.Printf("SSE MCP server listening on %s%s (no server timeouts; keep-alive headers enabled)", addr, endpoint)
+	logging.Infof("SSE MCP server listening on %s%s (no server timeouts; keep-alive headers enabled) clients=%d", addr, endpoint, atomic.LoadInt32(&s.sseClients))
 	return srv.ListenAndServe()
 }

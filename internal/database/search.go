@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 )
 
@@ -247,17 +247,17 @@ func (dm *DBManager) SearchSimilar(ctx context.Context, projectName string, embe
 		var embeddingBytes []byte
 		var distance float64
 		if err := rows.Scan(&name, &entityType, &embeddingBytes, &distance); err != nil {
-			log.Printf("Warning: Failed to scan search result row: %v", err)
+			logging.Warnf("Warning: Failed to scan search result row: %v", err)
 			continue
 		}
 		observations, err := dm.getEntityObservations(ctx, projectName, name)
 		if err != nil {
-			log.Printf("Warning: Failed to get observations for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to get observations for entity %q: %v", name, err)
 			continue
 		}
 		vector, err := dm.ExtractVector(ctx, embeddingBytes)
 		if err != nil {
-			log.Printf("Warning: Failed to extract vector for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to extract vector for entity %q: %v", name, err)
 			continue
 		}
 		searchResults = append(searchResults, apptype.SearchResult{
@@ -390,17 +390,17 @@ func (dm *DBManager) SearchEntities(ctx context.Context, projectName string, que
 		var name, entityType string
 		var embeddingBytes []byte
 		if err := rows.Scan(&name, &entityType, &embeddingBytes); err != nil {
-			log.Printf("Warning: Failed to scan entity row: %v", err)
+			logging.Warnf("Warning: Failed to scan entity row: %v", err)
 			continue
 		}
 		observations, err := dm.getEntityObservations(ctx, projectName, name)
 		if err != nil {
-			log.Printf("Warning: Failed to get observations for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to get observations for entity %q: %v", name, err)
 			continue
 		}
 		vector, err := dm.ExtractVector(ctx, embeddingBytes)
 		if err != nil {
-			log.Printf("Warning: Failed to extract vector for entity %q: %v", name, err)
+			logging.Warnf("Warning: Failed to extract vector for entity %q: %v", name, err)
 			continue
 		}
 		entities = append(entities, apptype.Entity{

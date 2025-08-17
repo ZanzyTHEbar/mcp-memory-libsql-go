@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/buildinfo"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/database"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/logging"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/server"
 )
@@ -33,7 +34,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		log.Println("Received shutdown signal, closing server...")
+		logging.Infof("Received shutdown signal, closing server...")
 		cancel()
 	}()
 
@@ -42,6 +43,9 @@ func main() {
 
 	// Initialize metrics (noop if disabled)
 	metrics.InitFromEnv()
+
+	// Initialize logging from env
+	logging.InitFromEnv()
 
 	// Override with command line flags if provided
 	if *libsqlURL != "" {
@@ -58,37 +62,40 @@ func main() {
 	// Create database manager
 	db, err := database.NewDBManager(config)
 	if err != nil {
-		log.Fatalf("Failed to create database manager: %v", err)
+		logging.Fatalf("Failed to create database manager: %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			log.Printf("Error closing database: %v", err)
+			logging.Warnf("Error closing database: %v", err)
 		}
 	}()
 
 	// Create MCP server
 	mcpServer := server.NewMCPServer(db)
 
+	// Log startup details
+	logging.Infof("Starting MCP Memory LibSQL server... version=%s transport=%s", buildinfo.Version, *transport)
+	logging.Debugf("DB URL=%s embedding_dims=%d provider=%s", config.URL, config.EmbeddingDims, config.EmbeddingsProvider)
+
 	// Run the server with selected transport
-	log.Println("Starting MCP Memory LibSQL server...")
 	switch *transport {
 	case "stdio":
 		go func() {
 			if err := mcpServer.Run(ctx); err != nil {
-				log.Printf("Server error: %v", err)
+				logging.Errorf("Server error: %v", err)
 			}
 		}()
 	case "sse":
 		go func() {
 			if err := mcpServer.RunSSE(ctx, *addr, *sseEndpoint); err != nil {
-				log.Printf("SSE server error: %v", err)
+				logging.Errorf("SSE server error: %v", err)
 			}
 		}()
 	default:
-		log.Fatalf("unknown transport: %s (expected: stdio or sse)", *transport)
+		logging.Fatalf("unknown transport: %s (expected: stdio or sse)", *transport)
 	}
 
 	<-ctx.Done()
 
-	log.Println("Server stopped")
+	logging.Infof("Server stopped")
 }
