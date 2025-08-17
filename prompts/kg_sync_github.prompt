@@ -1,0 +1,13 @@
+---
+name: kg_sync_github
+description: "Ensure Task:* nodes have exactly one canonical GitHub link observation; dedupe or add as needed."
+input:
+  schema:
+    tasks: array
+    canonicalUrls: array
+---
+KG Sync: open_nodes -> delete_observations (all GitHub:) -> add_observations(single canonical).
+
+Flow: open_nodes -> delete_observations ids -> add_observations canonical
+
+

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
@@ -23,6 +24,8 @@ const defaultProject = "default"
 type MCPServer struct {
 	server *mcp.Server
 	db     *database.DBManager
+	// RegisteredPrompts caches prompts added via safeAddPrompt for testing/inspection
+	RegisteredPrompts []*mcp.Prompt
 }
 
 // logToolError emits a consistent, low-cardinality structured log line for tool failures.
@@ -249,6 +252,7 @@ func (s *MCPServer) setupToolHandlers() {
 		Description: "Delete multiple entities by name.",
 		InputSchema: deleteEntitiesInputSchema,
 	}, s.handleDeleteEntities)
+
 	mcp.AddTool(s.server, &mcp.Tool{
 		Annotations: &deleteRelationsAnnotations,
 		Name:        "delete_relations",
@@ -256,6 +260,7 @@ func (s *MCPServer) setupToolHandlers() {
 		Description: "Delete multiple relations.",
 		InputSchema: deleteRelationsInputSchema,
 	}, s.handleDeleteRelations)
+
 	mcp.AddTool(s.server, &mcp.Tool{
 		Annotations: &deleteObservationsAnnotations,
 		Name:        "delete_observations",
@@ -271,6 +276,7 @@ func (s *MCPServer) setupToolHandlers() {
 		Description: "Partially update entities (type/embedding/observations).",
 		InputSchema: updateEntitiesInputSchema,
 	}, s.handleUpdateEntities)
+
 	mcp.AddTool(s.server, &mcp.Tool{
 		Annotations: &updateRelationsAnnotations,
 		Name:        "update_relations",
@@ -278,6 +284,7 @@ func (s *MCPServer) setupToolHandlers() {
 		Description: "Update relation tuples via delete/insert.",
 		InputSchema: updateRelationsInputSchema,
 	}, s.handleUpdateRelations)
+
 	mcp.AddTool(s.server, &mcp.Tool{
 		Annotations:  &healthCheckAnnotations,
 		Name:         "health_check",
@@ -317,13 +324,48 @@ func (s *MCPServer) setupToolHandlers() {
 
 // setupPrompts registers MCP prompts to guide clients in using this server
 func (s *MCPServer) setupPrompts() {
+	// helper: ensure any nil slice fields on a prompt are initialized to empty slices
+	ensureNonNilSlices := func(p *mcp.Prompt) {
+		if p == nil {
+			return
+		}
+		v := reflect.ValueOf(p).Elem()
+		for i := 0; i < v.NumField(); i++ {
+			f := v.Field(i)
+			if f.Kind() == reflect.Slice && f.IsNil() && f.CanSet() {
+				f.Set(reflect.MakeSlice(f.Type(), 0, 0))
+			}
+		}
+	}
+
+	// safeAddPrompt wraps AddPrompt and normalizes nil slices on the prompt struct
+	safeAddPrompt := func(prompt *mcp.Prompt, handler func(context.Context, *mcp.ServerSession, *mcp.GetPromptParams) (*mcp.GetPromptResult, error)) {
+		ensureNonNilSlices(prompt)
+		s.server.AddPrompt(prompt, handler)
+		// cache prompt for tests/inspection
+		s.RegisteredPrompts = append(s.RegisteredPrompts, prompt)
+	}
+
+	// If external prompts are present under ./prompts, load and register them instead of embedded prompts
+	if ext, err := LoadExternalPrompts("./prompts"); err == nil && len(ext) > 0 {
+		for _, p := range ext {
+			// capture p
+			pcopy := p
+			// register with a simple handler returning the description
+			safeAddPrompt(pcopy, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+				return &mcp.GetPromptResult{Description: pcopy.Description}, nil
+			})
+		}
+		return
+	}
+
 	// Quick start prompt
 	quickStart := &mcp.Prompt{
 		Name:        "quick_start",
 		Description: "Quick start guidance for using memory tools (search, read, and edit graph).",
 	}
 
-	s.server.AddPrompt(quickStart, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(quickStart, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "Memory quick start. Key points:" +
 			"\n- Each database fixes its embedding size at creation (F32_BLOB(N))." +
 			"\n- On startup, the server detects the DB’s size and adapts provider outputs to match (padding/truncation)." +
@@ -343,8 +385,7 @@ func (s *MCPServer) setupPrompts() {
 			{Name: "offset", Description: "Offset for pagination", Required: false},
 		},
 	}
-
-	s.server.AddPrompt(searchPrompt, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(searchPrompt, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "Search guidance for search_nodes (text, vector, and hybrid).\n\n" +
 			"Text search (FTS5 → LIKE fallback):\n" +
 			"- Uses FTS5 when available; transparently falls back to SQL LIKE if FTS5 is missing or a query cannot be parsed.\n" +
@@ -384,7 +425,7 @@ func (s *MCPServer) setupPrompts() {
 			{Name: "includeIssues", Description: "Import issues as Task:* with single GitHub link", Required: false},
 		},
 	}
-	s.server.AddPrompt(kgInit, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(kgInit, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "KG Init: create Repo:* and scaffold Pattern:* / Decision:* with tracks/documents relations. Idempotent; do not duplicate names.\n" +
 			"\nJSON plan (example):\n" +
 			"```json\n" +
@@ -406,7 +447,7 @@ func (s *MCPServer) setupPrompts() {
 			{Name: "removeRelations", Description: "[{from,to,relationType}]", Required: false},
 		},
 	}
-	s.server.AddPrompt(kgUpdate, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(kgUpdate, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "KG Update: open_nodes → diff → update_entities (replace/merge) → create_relations/delete_relations. Normalize texts; avoid duplicates.\n" +
 			"\nJSON plan (example):\n" +
 			"```json\n" +
@@ -424,7 +465,7 @@ func (s *MCPServer) setupPrompts() {
 			{Name: "canonicalUrls", Description: "Array of canonical URLs (optional)", Required: false},
 		},
 	}
-	s.server.AddPrompt(kgSync, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(kgSync, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "KG Sync: open_nodes → delete_observations (all GitHub:) → add_observations(single canonical). If no URL provided, fetch externally then set.\n" +
 			"\nFlow:\n" +
 			"```mermaid\nflowchart TD\n  A[tasks[]] --> B[open_nodes]\n  B --> C{>1 GitHub links?}\n  C -->|yes| D[delete_observations ids]\n  D --> E[add_observations canonical]\n  C -->|no| F{==0?}\n  F -->|yes| E\n  F -->|no| G[Done]\n  E --> G\n```"
@@ -443,7 +484,7 @@ func (s *MCPServer) setupPrompts() {
 			{Name: "direction", Description: "out|in|both", Required: false},
 		},
 	}
-	s.server.AddPrompt(kgRead, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(kgRead, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "KG Read: search_nodes (FTS5 or LIKE fallback) → open_nodes(includeRelations=true) → optional neighbors/walk/shortest_path based on expand.\n" +
 			"\nFlow:\n" +
 			"```mermaid\nflowchart TD\n  A[query,limit,offset,expand] --> B[search_nodes]\n  B --> C[open_nodes includeRelations]\n  C --> D{expand?}\n  D -->|neighbors| E[neighbors]\n  D -->|walk| F[walk depth 2]\n  D -->|shortest_path| G[shortest_path]\n  D -->|none| H[return]\n  E --> H\n  F --> H\n  G --> H\n```"
@@ -457,7 +498,7 @@ func (s *MCPServer) setupPrompts() {
 		Name:        "kg_memory_ops_guidance",
 		Description: "Operational guidance for memory usage: identify user, retrieve memory, and update KG with new facts.",
 	}
-	s.server.AddPrompt(memOps, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
+	safeAddPrompt(memOps, func(ctx context.Context, session *mcp.ServerSession, params *mcp.GetPromptParams) (*mcp.GetPromptResult, error) {
 		desc := "Follow these steps per interaction:\n" +
 			"1) Assume user=default_user; if unknown, attempt identification.\n" +
 			"2) Begin with \"Remembering...\" and retrieve context via read/search tools; refer to KG as \"memory\".\n" +
