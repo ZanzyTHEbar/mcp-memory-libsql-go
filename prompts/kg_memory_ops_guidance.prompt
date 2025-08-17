@@ -1,0 +1,15 @@
+---
+name: kg_memory_ops_guidance
+description: "Operational guidance for memory usage: identify user, retrieve memory, and update KG with new facts."
+input:
+  schema: {}
+---
+Follow these steps per interaction:
+1) Assume user=default_user; if unknown, attempt identification.
+2) Begin with "Remembering..." and retrieve context via read/search tools; refer to KG as "memory".
+3) Detect new info: identity, behaviors, preferences, goals, relationships.
+4) Update memory: create entities for recurring orgs/people/events; relate to current entities; store facts as observations (idempotently).
+
+Recommended sequence: read_graph(limit=10) or search_nodes(query=topic) -> open_nodes(includeRelations=true) -> update_entities
+
+

@@ -1,0 +1,22 @@
+---
+name: kg_init_new_repo
+description: "Initialize an optimal knowledge graph for a new repository (Repo:*, Pattern:*, Decision:*, Task:* scaffolds, idempotent)."
+input:
+  schema:
+    repoSlug: string
+    areas: array
+    includeIssues: boolean
+---
+KG Init: create Repo:* and scaffold Pattern:/Decision:* with tracks/documents relations. Idempotent; do not duplicate names.
+
+Example JSON plan:
+```json
+{
+  "entities": [
+    { "name": "Repo: {repoSlug}", "entityType": "Repo", "observations": ["Primary repository for KG"] }
+  ],
+  "relations": [ { "from": "Pattern: Architecture", "to": "Repo: {repoSlug}", "relationType": "documents" } ]
+}
+```
+
+

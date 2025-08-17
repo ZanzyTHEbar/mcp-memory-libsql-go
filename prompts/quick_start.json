@@ -1,0 +1,5 @@
+{
+  "name": "quick_start",
+  "description": "Memory quick start. Key points:\n- Each database fixes its embedding size at creation (F32_BLOB(N)).\n- On startup, the server detects the DB’s size and adapts provider outputs to match (padding/truncation).\n- You can switch providers/models without recreating the DB; query vectors must still match the DB’s size exactly.\n- See health_check for current EmbeddingDims.\n- Optional env EMBEDDINGS_ADAPT_MODE: pad_or_truncate (default) | pad | truncate.",
+  "arguments": []
+}

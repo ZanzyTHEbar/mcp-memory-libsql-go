@@ -1,0 +1,16 @@
+---
+name: kg_read_best_practices
+description: "Read graph with layered strategy: search_nodes -> open_nodes -> neighbors/walk/shortest_path; paginate and keep ordering stable."
+input:
+  schema:
+    query: string
+    limit: number
+    offset: number
+    expand: string
+    direction: string
+---
+KG Read: search_nodes (FTS5 or LIKE fallback) -> open_nodes(includeRelations=true) -> optional neighbors/walk/shortest_path based on expand.
+
+Tips: '*' enables prefix; use entity_name: and content: qualifiers with FTS. 
+
+

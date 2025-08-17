@@ -1,0 +1,21 @@
+---
+name: kg_update_graph
+description: "Update entities/relations with replace/merge observations, add/remove relations with idempotency."
+input:
+  schema:
+    targetNames: array
+    replaceObservations: array
+    mergeObservations: array
+    newRelations: array
+    removeRelations: array
+---
+KG Update: open_nodes -> diff -> update_entities (replace/merge) -> create_relations/delete_relations.
+
+Example:
+```json
+{
+  "updates": [ { "name": "Pattern: Architecture", "mergeObservations": ["Added SSE keep-alive"] } ]
+}
+```
+
+

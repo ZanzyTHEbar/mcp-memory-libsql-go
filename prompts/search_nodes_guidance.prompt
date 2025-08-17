@@ -1,0 +1,25 @@
+---
+name: search_nodes_guidance
+description: "Compose an effective memory search using search_nodes (text, vector, hybrid)."
+input:
+  schema:
+    query: string
+    limit: number
+    offset: number
+---
+Text search (FTS5 -> LIKE fallback):
+- Uses FTS5 when available; falls back to SQL LIKE if unavailable.
+- Tokenizer includes common symbols; prefix search: append '*'.
+- Field qualifiers: use entity_name: or content: (FTS only).
+- Phrases: wrap in double-quotes. Use OR explicitly.
+
+Vector search: pass a numeric array matching DB embedding size.
+
+Hybrid search: if HYBRID_SEARCH=true and embeddings provider configured, text + vector results are fused.
+
+Examples:
+```json
+{ "query": "Task:*", "limit": 10 }
+```
+
+
