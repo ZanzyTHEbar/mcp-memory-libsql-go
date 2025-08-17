@@ -117,16 +117,9 @@ docker-run-multi: data
 .PHONY: docker-test
 docker-test: data
 	echo "Checking for existing image $(DOCKER_IMAGE)..."; \
-	# Prepare env-file for compose: prefer user-supplied ENV_FILE, otherwise ensure .env.ci exists and use it
+	# Ensure .env.ci exists if ENV_FILE isn't provided (delegate to ensure-env-ci target)
+	$(MAKE) ensure-env-ci >/dev/null 2>&1; \
 	if [ -z "$(ENV_FILE)" ]; then \
-		if [ ! -f .env.ci ]; then \
-			# Create .env.ci. Do NOT set a global /data/libsql.db when running in multi mode.
-			if [ "$(MODE)" = "multi" ]; then \
-				printf '%s\n' 'EMBEDDING_DIMS=4' 'MODE=multi' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
-			else \
-				printf '%s\n' 'LIBSQL_URL=file:/data/libsql.db' 'EMBEDDING_DIMS=4' 'MODE=single' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
-			fi; \
-		fi; \
 		env_file_arg="--env-file .env.ci"; \
 	else \
 		env_file_arg="--env-file $(ENV_FILE)"; \
@@ -200,6 +193,25 @@ compose-logs:
 
 compose-ps:
 	docker compose ps
+
+# Ensure .env.ci exists with safe defaults for CI
+.PHONY: ensure-env-ci
+ensure-env-ci:
+	@if [ -n "$(ENV_FILE)" ]; then \
+		echo "Using provided ENV_FILE=$(ENV_FILE) - skipping .env.ci generation"; \
+		exit 0; \
+	fi; \
+	if [ -f .env.ci ]; then \
+		echo ".env.ci already exists"; \
+		exit 0; \
+	fi; \
+	# Create .env.ci depending on MODE (avoid LIBSQL_URL in multi)
+	if [ "$(MODE)" = "multi" ]; then \
+		printf '%s\n' 'EMBEDDING_DIMS=4' 'MODE=multi' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
+	else \
+		printf '%s\n' 'LIBSQL_URL=file:/data/libsql.db' 'EMBEDDING_DIMS=4' 'MODE=single' 'PROJECTS_DIR=/data/projects' 'PORT=8090' 'METRICS_PORT=9090' 'SSE_ENDPOINT=/sse' > .env.ci; \
+	fi; \
+	@echo "Wrote .env.ci";
 
 # Coolify production-style targets: separate build and run commands
 .PHONY: coolify-prod-build coolify-prod-run coolify-prod-down coolify-prod-logs coolify-prod-ps
