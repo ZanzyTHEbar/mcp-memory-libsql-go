@@ -1,7 +1,7 @@
 # We cannot use an Alpine image for building because the go-libsql package uses pre-compiled binaries that were built-against glibc
 
 ##### Build stage ###############################################################
-FROM golang:1.24.3 AS build
+FROM golang:1.24.6 AS build
 
 WORKDIR /src
 RUN apt-get update && apt-get install -y --no-install-recommends \

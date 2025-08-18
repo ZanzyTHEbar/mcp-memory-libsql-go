@@ -12,6 +12,29 @@ if [ "${MODE+set}" = "set" ] && [ -n "${MODE}" ]; then
     mode_provided=1
 fi
 
+# If running in single mode and using a local file DB, ensure the DB file exists
+# This helps scenarios where SKIP_CHOWN=1 or mounts deny ownership changes.
+if [ "${MODE}" = "single" ]; then
+    if [ -n "${LIBSQL_URL:-}" ] && echo "${LIBSQL_URL}" | grep -q '^file:'; then
+        DB_PATH=$(echo "${LIBSQL_URL}" | sed 's%^file:%%')
+        if [ -z "${DB_PATH}" ]; then
+            DB_PATH="/data/libsql.db"
+        fi
+        DB_DIR=$(dirname "${DB_PATH}")
+        mkdir -p "${DB_DIR}" || true
+        if [ ! -f "${DB_PATH}" ]; then
+            echo "entrypoint: creating local database file at ${DB_PATH}" >&2
+            touch "${DB_PATH}" || true
+            # If running as root and SKIP_CHOWN is not set, attempt to chown the file
+            if [ "$(id -u)" -eq 0 ] && [ "${SKIP_CHOWN}" != "1" ]; then
+                chown "${TARGET_UID:-1000}:${TARGET_GID:-1000}" "${DB_PATH}" || true
+            fi
+        else
+            echo "entrypoint: local database file ${DB_PATH} already exists" >&2
+        fi
+    fi
+fi
+
 if [ "$mode_provided" -eq 0 ]; then
     # MODE not explicitly provided; if CMD args exist, execute them
     if [ "$#" -gt 0 ]; then
@@ -53,12 +76,34 @@ if [ "$(id -u)" -eq 0 ]; then
         if ! id -u app >/dev/null 2>&1; then
             useradd --system --gid app --home /app --shell /usr/sbin/nologin app || true
         fi
-        chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
-        chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
+
+        # Helper: only chown paths when the owner differs from TARGET_UID:TARGET_GID
+        ensure_owned() {
+            local path="$1"
+            if [ ! -e "$path" ]; then
+                mkdir -p "$path" || true
+            fi
+            # Get current owner uid:gid
+            cur_owner=$(stat -c '%u:%g' "$path" 2>/dev/null || echo '')
+            if [ "$cur_owner" != "${TARGET_UID}:${TARGET_GID}" ]; then
+                echo "entrypoint: changing ownership of $path from ${cur_owner:-unknown} to ${TARGET_UID}:${TARGET_GID}" >&2
+                chown -R "${TARGET_UID}:${TARGET_GID}" "$path" || true
+            else
+                echo "entrypoint: $path already owned by ${TARGET_UID}:${TARGET_GID}, skipping chown" >&2
+            fi
+        }
+
+        ensure_owned "${PROJECTS_DIR}"
+        ensure_owned "/data"
+
         # Ensure libsql DB file is owned correctly if present
         if [ -f /data/libsql.db ]; then
-            chown "${TARGET_UID}:${TARGET_GID}" /data/libsql.db || true
+            cur_db_owner=$(stat -c '%u:%g' /data/libsql.db 2>/dev/null || echo '')
+            if [ "$cur_db_owner" != "${TARGET_UID}:${TARGET_GID}" ]; then
+                chown "${TARGET_UID}:${TARGET_GID}" /data/libsql.db || true
+            fi
         fi
+
         # Make the projects dir group-writable and set SGID so new subdirs inherit
         # the group. This helps when the host and container share a group for access.
         chmod 2775 "${PROJECTS_DIR}" || true
@@ -89,9 +134,14 @@ if [ "$(id -u)" -eq 0 ]; then
         mkdir -p "${PROJECTS_DIR}" || true
     else
         mkdir -p "${PROJECTS_DIR}" || true
-        # chown again (idempotent)
-        chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
-        chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
+        # Use the same ensure_owned helper to avoid unnecessary chown operations
+        if declare -f ensure_owned >/dev/null 2>&1; then
+            ensure_owned "/data"
+            ensure_owned "${PROJECTS_DIR}"
+        else
+            chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
+            chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
+        fi
         # set SGID on projects dir so new subdirs inherit group
         chmod 2775 "${PROJECTS_DIR}" || true
         # set default ACLs if available

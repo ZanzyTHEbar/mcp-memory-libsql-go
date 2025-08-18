@@ -26,7 +26,14 @@ PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
 # Allow skipping host permission operations when creating data directories
 # Useful when running make as non-root or when mounted files should keep
 # host ownership. Set SKIP_CHOWN=1 to avoid chmod/chown operations.
-SKIP_CHOWN ?= 0
+HOST_UID ?= $(shell id -u)
+HOST_GID ?= $(shell id -g)
+# Default PROJECTS ownership to the runner's UID/GID unless overridden
+PROJECTS_UID ?= $(HOST_UID)
+PROJECTS_GID ?= $(HOST_GID)
+# Default SKIP_CHOWN to 0 when running as root, otherwise 1; allow override
+SKIP_CHOWN_DEFAULT := $(if $(filter 0,$(HOST_UID)),0,1)
+SKIP_CHOWN ?= $(SKIP_CHOWN_DEFAULT)
 
 # Default target
 .PHONY: all
@@ -155,9 +162,9 @@ ensure-env-ci:
 	if [ -s "$$env_target" ]; then echo "Using existing $$env_target"; exit 0; fi; \
 	mode_value="$${MODE:-multi}"; \
 	if [ "$$mode_value" = "multi" ]; then \
-		printf '%s\n' "MODE=multi" "LIBSQL_URL=" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "EMBEDDINGS_PROVIDER=" "EMBEDDINGS_ADAPT_MODE=" "DB_MAX_OPEN_CONNS=16" "DB_MAX_IDLE_CONNS=8" "DB_CONN_MAX_IDLE_SEC=30" "DB_CONN_MAX_LIFETIME_SEC=60" "HYBRID_SEARCH=true" "HYBRID_TEXT_WEIGHT=0.4" "HYBRID_VECTOR_WEIGHT=0.6" "HYBRID_RRF_K=60" "METRICS_PROMETHEUS=true" "METRICS_PORT=9090" "TRANSPORT=sse" "PROJECTS_DIR=/data/projects" "PORT=8090" "SSE_ENDPOINT=/sse" "MULTI_PROJECT_AUTH_REQUIRED=false" "MULTI_PROJECT_AUTO_INIT_TOKEN=true" "MULTI_PROJECT_DEFAULT_TOKEN=ci-token" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
+		printf '%s\n' "MODE=multi" "LIBSQL_URL=file:/data/libsql.db" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "EMBEDDINGS_PROVIDER=" "EMBEDDINGS_ADAPT_MODE=" "DB_MAX_OPEN_CONNS=16" "DB_MAX_IDLE_CONNS=8" "DB_CONN_MAX_IDLE_SEC=30" "DB_CONN_MAX_LIFETIME_SEC=60" "HYBRID_SEARCH=true" "HYBRID_TEXT_WEIGHT=0.4" "HYBRID_VECTOR_WEIGHT=0.6" "HYBRID_RRF_K=60" "METRICS_PROMETHEUS=true" "METRICS_PORT=9090" "TRANSPORT=sse" "PROJECTS_DIR=/data/projects" "PORT=8090" "SSE_ENDPOINT=/sse" "MULTI_PROJECT_AUTH_REQUIRED=false" "MULTI_PROJECT_AUTO_INIT_TOKEN=true" "MULTI_PROJECT_DEFAULT_TOKEN=ci-token" "SKIP_CHOWN=0" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
 	else \
-		printf '%s\n' "MODE=single" "LIBSQL_URL=file:/data/libsql.db" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "PROJECTS_DIR=/data/projects" "PORT=8090" "METRICS_PORT=9090" "SSE_ENDPOINT=/sse" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
+		printf '%s\n' "MODE=single" "LIBSQL_URL=file:/data/libsql.db" "LIBSQL_AUTH_TOKEN=" "EMBEDDING_DIMS=4" "PROJECTS_DIR=/data/projects" "PORT=8090" "METRICS_PORT=9090" "SSE_ENDPOINT=/sse" "SKIP_CHOWN=0" "BUILD_DATE=${BUILD_DATE:-ci}" > "$$env_target"; \
 	fi; \
 	echo "Wrote $$env_target";
 
@@ -216,7 +223,7 @@ env-prod:
 	  echo "METRICS_PORT=9090"; \
 	  echo; \
 	  echo "TRANSPORT=sse"; \
-	  echo "PORT=8080"; \
+	  echo "PORT=8090"; \
 	  echo "SSE_ENDPOINT=/sse"; \
 	  echo; \
 	  echo "# Multi-project auth toggles"; \
@@ -229,12 +236,27 @@ env-prod:
 	  echo "LIBSQL_AUTH_TOKEN="; \
 	} > .env.prod
 
-ollama-local: docker-build data env-prod
-	# Default prod: multi-project SSE, auth off, embeddings=ollama
-	docker compose -f docker/docker-compose.ollama.yml --env-file .env.prod up --build -d
+ollama-local: docker-build data env-ollama
+	# Ollama local: multi-project SSE, auth off, embeddings=ollama (local env)
+	docker compose -f docker/docker-compose.ollama.yml --env-file .env.ollama up --build -d
 
-ollama-local-down: env-prod
-	docker compose -f docker/docker-compose.ollama.yml --env-file .env.prod down $(if $(WITH_VOLUMES),-v,)
+ollama-local-down: env-ollama
+	docker compose -f docker/docker-compose.ollama.yml --env-file .env.ollama down $(if $(WITH_VOLUMES),-v,)
+
+.PHONY: env-ollama
+env-ollama:
+	@echo "Writing .env.ollama..."
+	@{ \
+	  echo "MODE=multi"; \
+	  echo "LIBSQL_URL="; \
+	  echo "LIBSQL_AUTH_TOKEN="; \
+	  echo "EMBEDDINGS_PROVIDER=ollama"; \
+	  echo "OLLAMA_HOST=http://ollama:11434"; \
+	  echo "OLLAMA_EMBEDDINGS_MODEL=nomic-embed-text"; \
+	  echo "EMBEDDING_DIMS=768"; \
+	  echo "EMBEDDINGS_ADAPT_MODE=pad_or_truncate"; \
+	  echo "SKIP_CHOWN=0"; \
+	} > .env.ollama
 
 prod: docker-build data env-prod
 	# Default prod: multi-project SSE, auth off, embeddings=ollama

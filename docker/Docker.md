@@ -34,31 +34,46 @@ or apply ACLs.
 
 Example (docker-compose snippet):
 
+```yaml
 services:
-memory:
-image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
-environment: - MODE=multi - PROJECTS_DIR=/data/projects - PROJECTS_UID=1000 - PROJECTS_GID=1000 - SKIP_CHOWN=1
-volumes: - type: bind
-source: /data/coolify/applications/<id>
-target: /data
-bind:
-create_host_path: true
-user: "${HOST_UID:-}:${HOST_GID:-}"
+  memory:
+    image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
+    environment:
+      - MODE=multi
+      - PROJECTS_DIR=/data/projects
+      - PROJECTS_UID=1000
+      - PROJECTS_GID=1000
+      - SKIP_CHOWN=1
+    volumes:
+      - type: bind
+        source: /data/coolify/applications/<id>
+        target: /data
+        bind:
+          create_host_path: true
+    user: "${HOST_UID:-}:${HOST_GID:-}"
+```
 
 ## Compose usage (bind mount)
 
-Use a single bind mount for all projects, since projects are created dynamically:
+Use a single bind mount for all projects, since projects are created dynamically. Example (local development):
 
+```yaml
 services:
-memory:
-image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
-environment: - MODE=multi - PROJECTS_DIR=/data/projects - PROJECTS_UID=1000 - PROJECTS_GID=1000
-volumes: - type: bind
-source: /data/coolify/applications/<id>
-target: /data
-bind:
-create_host_path: true
-user: "${HOST_UID:-}:${HOST_GID:-}"
+  memory:
+    image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
+    environment:
+      - MODE=multi
+      - PROJECTS_DIR=/data/projects
+      - PROJECTS_UID=1000
+      - PROJECTS_GID=1000
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+        bind:
+          create_host_path: true
+    user: "${HOST_UID:-}:${HOST_GID:-}"
+```
 
 ## Backup & restore (named-volume equivalent approach using tar)
 

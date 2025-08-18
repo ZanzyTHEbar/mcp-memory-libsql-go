@@ -24,7 +24,7 @@ services:
       - METRICS_PORT=${METRICS_PORT}
       # Transport / main address (container listens on PORT, host maps via ports below)
       - TRANSPORT=${TRANSPORT}
-      - PORT=8090
+      - PORT=${PORT}
       - SSE_ENDPOINT=${SSE_ENDPOINT}
       # Multi-project auth toggles
       - MULTI_PROJECT_AUTH_REQUIRED=${MULTI_PROJECT_AUTH_REQUIRED}
@@ -37,7 +37,7 @@ services:
       - PROJECTS_GID=${PROJECTS_GID}
     ports:
       # Map host port from env (PORT) if provided via --env-file; default to 8090
-      - "${PORT:-8090}:8090"
+      - "${PORT}:${PORT}"
     volumes:
       # Host data path (use ./data for local dev or set HOST_DATA_PATH to
       # /data/coolify/applications/<id> in production)
