@@ -23,6 +23,10 @@ PORT_SSE ?= 8080
 PORT_METRICS ?= 9090
 PROFILES ?= memory
 PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
+# Allow skipping host permission operations when creating data directories
+# Useful when running make as non-root or when mounted files should keep
+# host ownership. Set SKIP_CHOWN=1 to avoid chmod/chown operations.
+SKIP_CHOWN ?= 0
 
 # Default target
 .PHONY: all
@@ -76,7 +80,15 @@ docker-rebuild:
 .PHONY: data
 data:
 	mkdir -p ./data ./data/projects ./ollama_models
-	chmod -R 777 ./data ./ollama_models
+	# Only perform chmod when explicitly allowed and when running as root.
+	# If SKIP_CHOWN=1 or we're not root, skip to avoid "Operation not permitted".
+	if [ "$${SKIP_CHOWN}" = "1" ]; then \
+		echo "Makefile: SKIP_CHOWN=1 set, skipping chmod/chown on ./data and ./ollama_models"; \
+	elif [ "$(shell id -u)" != "0" ]; then \
+		echo "Makefile: not running as root, skipping chmod/chown on ./data and ./ollama_models"; \
+	else \
+		chmod -R 777 ./data ./ollama_models || true; \
+	fi
 
 # Run the docker image (SSE default)
 .PHONY: docker-run
@@ -91,6 +103,7 @@ docker-run-sse: data
 		-e MODE=$(MODE) \
 		-e PORT=$(PORT_SSE) \
 		-e METRICS_PORT=$(PORT_METRICS) \
+		-e SKIP_CHOWN=$(SKIP_CHOWN) \
 		$(DOCKER_IMAGE) -transport sse -addr :$(PORT_SSE) -sse-endpoint /sse
 
 # Run the docker image with stdio transport
@@ -98,6 +111,7 @@ docker-run-sse: data
 docker-run-stdio: data
 	docker run --rm $(ENV_FILE_ARG) \
 		-v $(shell pwd)/data:/data \
+		-e SKIP_CHOWN=$(SKIP_CHOWN) \
 		$(DOCKER_IMAGE) -transport stdio
 
 # Run the docker image with multi-project mode (SSE)
@@ -109,6 +123,7 @@ docker-run-multi: data
 		-e MODE=multi \
 		-e PORT=$(PORT_SSE) \
 		-e METRICS_PORT=$(PORT_METRICS) \
+		-e SKIP_CHOWN=$(SKIP_CHOWN) \
 		$(DOCKER_IMAGE) -transport sse -addr :$(PORT_SSE) -sse-endpoint /sse -projects-dir /data/projects
 
 # End-to-end docker test workflow

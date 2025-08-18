@@ -24,6 +24,11 @@ MODE=${MODE:-single}
 PORT=${PORT}
 METRICS_PORT=${METRICS_PORT:-9090}
 PROJECTS_DIR=${PROJECTS_DIR:-/data/projects}
+# Allow deployments to opt-out of performing chown/chmod/setfacl on mounted
+# host paths. When running the container as a non-root user (e.g. via
+# `user:` in docker-compose) set SKIP_CHOWN=1 to avoid permission operations
+# that would otherwise fail on bind-mounted host directories.
+SKIP_CHOWN=${SKIP_CHOWN:-0}
 
 # Build common args; ensure addr includes leading colon
 COMMON_ARGS=("-transport" "${TRANSPORT:-sse}" "-addr" ":${PORT}" "-sse-endpoint" "${SSE_ENDPOINT:-/sse}")
@@ -36,28 +41,32 @@ if [ "$(id -u)" -eq 0 ]; then
     TARGET_UID=${PROJECTS_UID:-1000}
     TARGET_GID=${PROJECTS_GID:-1000}
     echo "entrypoint: running as root, ensuring ${PROJECTS_DIR} exists and owned by ${TARGET_UID}:${TARGET_GID}" >&2
-    mkdir -p "${PROJECTS_DIR}" || true
-    mkdir -p /data || true
-    # create group/user if necessary (ignore errors if they already exist)
-    if ! getent group app >/dev/null 2>&1; then
-        groupadd --gid "${TARGET_GID}" app || true
-    fi
-    if ! id -u app >/dev/null 2>&1; then
-        useradd --system --gid app --home /app --shell /usr/sbin/nologin app || true
-    fi
-    chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
-    chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
-    # Ensure libsql DB file is owned correctly if present
-    if [ -f /data/libsql.db ]; then
-        chown "${TARGET_UID}:${TARGET_GID}" /data/libsql.db || true
-    fi
-    # Make the projects dir group-writable and set SGID so new subdirs inherit
-    # the group. This helps when the host and container share a group for access.
-    chmod 2775 "${PROJECTS_DIR}" || true
-    # If setfacl is available, set default ACLs so new files/dirs are group-writable
-    if command -v setfacl >/dev/null 2>&1; then
-        setfacl -R -m d:g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
-        setfacl -R -m g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+    if [ "${SKIP_CHOWN}" = "1" ]; then
+        echo "entrypoint: SKIP_CHOWN=1 set, skipping chown/chmod/ACL operations for ${PROJECTS_DIR}" >&2
+    else
+        mkdir -p "${PROJECTS_DIR}" || true
+        mkdir -p /data || true
+        # create group/user if necessary (ignore errors if they already exist)
+        if ! getent group app >/dev/null 2>&1; then
+            groupadd --gid "${TARGET_GID}" app || true
+        fi
+        if ! id -u app >/dev/null 2>&1; then
+            useradd --system --gid app --home /app --shell /usr/sbin/nologin app || true
+        fi
+        chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
+        chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
+        # Ensure libsql DB file is owned correctly if present
+        if [ -f /data/libsql.db ]; then
+            chown "${TARGET_UID}:${TARGET_GID}" /data/libsql.db || true
+        fi
+        # Make the projects dir group-writable and set SGID so new subdirs inherit
+        # the group. This helps when the host and container share a group for access.
+        chmod 2775 "${PROJECTS_DIR}" || true
+        # If setfacl is available, set default ACLs so new files/dirs are group-writable
+        if command -v setfacl >/dev/null 2>&1; then
+            setfacl -R -m d:g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+            setfacl -R -m g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+        fi
     fi
     # detect privilege-drop helpers
     if command -v gosu >/dev/null 2>&1; then
@@ -75,19 +84,24 @@ fi
 # will run at container startup when the entrypoint executes.
 if [ "$(id -u)" -eq 0 ]; then
     echo "entrypoint: performing explicit init of /data and ${PROJECTS_DIR}" >&2
-    mkdir -p "${PROJECTS_DIR}" || true
-    # chown again (idempotent)
-    chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
-    chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
-    # set SGID on projects dir so new subdirs inherit group
-    chmod 2775 "${PROJECTS_DIR}" || true
-    # set default ACLs if available
-    if command -v setfacl >/dev/null 2>&1; then
-        echo "entrypoint: applying default ACLs to ${PROJECTS_DIR}" >&2
-        setfacl -R -m d:g:${TARGET_GID}:rwx "/data" || true
-        setfacl -R -m g:${TARGET_GID}:rwx "/data" || true
-        setfacl -R -m d:g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
-        setfacl -R -m g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+    if [ "${SKIP_CHOWN}" = "1" ]; then
+        echo "entrypoint: SKIP_CHOWN=1 set, skipping explicit init (chown/chmod/setfacl)" >&2
+        mkdir -p "${PROJECTS_DIR}" || true
+    else
+        mkdir -p "${PROJECTS_DIR}" || true
+        # chown again (idempotent)
+        chown -R "${TARGET_UID}:${TARGET_GID}" /data || true
+        chown -R "${TARGET_UID}:${TARGET_GID}" "${PROJECTS_DIR}" || true
+        # set SGID on projects dir so new subdirs inherit group
+        chmod 2775 "${PROJECTS_DIR}" || true
+        # set default ACLs if available
+        if command -v setfacl >/dev/null 2>&1; then
+            echo "entrypoint: applying default ACLs to ${PROJECTS_DIR}" >&2
+            setfacl -R -m d:g:${TARGET_GID}:rwx "/data" || true
+            setfacl -R -m g:${TARGET_GID}:rwx "/data" || true
+            setfacl -R -m d:g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+            setfacl -R -m g:${TARGET_GID}:rwx "${PROJECTS_DIR}" || true
+        fi
     fi
 fi
 

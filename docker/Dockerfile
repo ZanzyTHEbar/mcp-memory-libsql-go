@@ -49,9 +49,12 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # The entrypoint will drop privileges to the `app` user when starting the
 # service process.
 
-# Default environment variables
+# Default environment variables (non-sensitive defaults only)
+# NOTE: Do NOT bake sensitive API keys or tokens into the image. Provide
+# sensitive values (API keys, DB auth tokens, etc.) at runtime via an
+# env-file, `-e`/--env, or container secret mechanism. Keeping secrets out of
+# the image avoids accidental leakage and silences static analysis warnings.
 ENV LIBSQL_URL="file:/data/libsql.db" \
-    LIBSQL_AUTH_TOKEN="" \
     EMBEDDING_DIMS=4 \
     DB_MAX_OPEN_CONNS="" \
     DB_MAX_IDLE_CONNS="" \
@@ -64,16 +67,19 @@ ENV LIBSQL_URL="file:/data/libsql.db" \
     HYBRID_TEXT_WEIGHT=0.4 \
     HYBRID_VECTOR_WEIGHT=0.6 \
     HYBRID_RRF_K=60 \
-    OPENAI_API_KEY="" \
     OPENAI_EMBEDDINGS_MODEL="text-embedding-3-small" \
     OLLAMA_HOST="" \
     OLLAMA_EMBEDDINGS_MODEL="nomic-embed-text" \
-    GOOGLE_API_KEY="" \
     GEMINI_EMBEDDINGS_MODEL="text-embedding-004" \
-    VERTEX_EMBEDDINGS_ENDPOINT="" \
-    VERTEX_ACCESS_TOKEN="" \
     LOCALAI_BASE_URL="http://localhost:8080/v1" \
     LOCALAI_EMBEDDINGS_MODEL="text-embedding-ada-002"
+
+# Allow deployments to opt-out of performing chown/chmod/ACL operations at
+# container startup. When running the container as a non-root user (for
+# example via `user:` in docker-compose) set `SKIP_CHOWN=1` in your
+# environment to avoid permission operations that would otherwise fail on
+# bind-mounted host directories.
+ENV SKIP_CHOWN="0"
 
 # Volumes and ports
 VOLUME ["/data"]
