@@ -3,6 +3,13 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.4.4](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.3...v0.4.4) (2025-08-18)
+
+### 🤖 Build System
+
+* **fix-docker:** allow running docker as non-root user ([a365ede](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/a365ede6e16531263ef75f7c4dfa873f18efdcea))
+* **fix-docker:** fix entrypoint fallback for SKIP_CHOWN ([c48f238](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/c48f238fae6976ad5e60b19e82fc45872fcf5742))
+
 ## [0.4.3](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.2...v0.4.3) (2025-08-18)
 
 ### 🤖 Build System
