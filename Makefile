@@ -214,12 +214,19 @@ env-prod:
 	  echo "LIBSQL_AUTH_TOKEN="; \
 	} > .env.prod
 
+ollama-local: docker-build data env-prod
+	# Default prod: multi-project SSE, auth off, embeddings=ollama
+	docker compose -f docker/docker-compose.ollama.yml --env-file .env.prod up --build -d
+
+ollama-local-down: env-prod
+	docker compose -f docker/docker-compose.ollama.yml --env-file .env.prod down $(if $(WITH_VOLUMES),-v,)
+
 prod: docker-build data env-prod
 	# Default prod: multi-project SSE, auth off, embeddings=ollama
-	docker compose --env-file .env.prod --profile ollama --profile multi up --build -d
+	docker compose --env-file .env.prod up --build -d
 
 prod-down: env-prod
-	docker compose --env-file .env.prod --profile ollama --profile multi down $(if $(WITH_VOLUMES),-v,)
+	docker compose --env-file .env.prod down $(if $(WITH_VOLUMES),-v,)
 
 prod-logs: env-prod
 	docker compose --env-file .env.prod logs -f --tail=200 memory-multi

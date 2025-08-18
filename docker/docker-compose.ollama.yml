@@ -1,0 +1,81 @@
+services:
+  memory:
+    image: ghcr.io/zanzythebar/mcp-memory-libsql-go:latest
+    environment:
+      # Core DB
+      - LIBSQL_URL=${LIBSQL_URL}
+      - LIBSQL_AUTH_TOKEN=${LIBSQL_AUTH_TOKEN}
+      # Embeddings
+      - EMBEDDING_DIMS=${EMBEDDING_DIMS}
+      - EMBEDDINGS_PROVIDER=${EMBEDDINGS_PROVIDER}
+      - EMBEDDINGS_ADAPT_MODE=${EMBEDDINGS_ADAPT_MODE}
+      # Pooling (optional)
+      - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS}
+      - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS}
+      - DB_CONN_MAX_IDLE_SEC=${DB_CONN_MAX_IDLE_SEC}
+      - DB_CONN_MAX_LIFETIME_SEC=${DB_CONN_MAX_LIFETIME_SEC}
+      # Hybrid (optional)
+      - HYBRID_SEARCH=${HYBRID_SEARCH}
+      - HYBRID_TEXT_WEIGHT=${HYBRID_TEXT_WEIGHT}
+      - HYBRID_VECTOR_WEIGHT=${HYBRID_VECTOR_WEIGHT}
+      - HYBRID_RRF_K=${HYBRID_RRF_K}
+      # Metrics
+      - METRICS_PROMETHEUS=${METRICS_PROMETHEUS}
+      - METRICS_PORT=${METRICS_PORT}
+      # Transport / main address (container listens on PORT, host maps via ports below)
+      - TRANSPORT=${TRANSPORT}
+      - PORT=8090
+      - SSE_ENDPOINT=${SSE_ENDPOINT}
+      # Multi-project auth toggles
+      - MULTI_PROJECT_AUTH_REQUIRED=${MULTI_PROJECT_AUTH_REQUIRED}
+      - MULTI_PROJECT_AUTO_INIT_TOKEN=${MULTI_PROJECT_AUTO_INIT_TOKEN}
+      - MULTI_PROJECT_DEFAULT_TOKEN=${MULTI_PROJECT_DEFAULT_TOKEN}
+      # Runtime mode and misc
+      - MODE=${MODE} # single | multi | voyageai
+      - PROJECTS_DIR=${PROJECTS_DIR}
+      - PROJECTS_UID=${PROJECTS_UID}
+      - PROJECTS_GID=${PROJECTS_GID}
+    ports:
+      # Map host port from env (PORT) if provided via --env-file; default to 8090
+      - "${PORT:-8090}:8090"
+    volumes:
+      # Host data path (use ./data for local dev or set HOST_DATA_PATH to
+      # /data/coolify/applications/<id> in production)
+      - type: bind
+        source: ./data
+        target: /data
+        bind:
+          create_host_path: true
+    # Optionally run container as the host UID/GID to avoid permission issues
+    # when bind-mounting ./data. You can set HOST_UID and HOST_GID in your
+    # environment (e.g., to your current user id). If not set, the container
+    # will run as the image default and entrypoint will chown /data/projects.
+    user: "${HOST_UID:-}:${HOST_GID:-}"
+    healthcheck:
+      test: >
+        CMD-SHELL
+        curl -fsS http://127.0.0.1:8090/healthz ||
+        curl -fsS http://127.0.0.1:9090/healthz ||
+        pgrep -x mcp-memory-libsql-go >/dev/null
+      interval: 5s
+      timeout: 5s
+      start_period: 5s
+      retries: 30
+
+  ollama:
+    image: 'ollama/ollama:latest'
+    volumes:
+      - ./data:/root/.ollama
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - ollama list >/dev/null 2>&1
+      interval: 5s
+      timeout: 30s
+      retries: 10
+    #ports:
+     # - "11434:11434"
+    #environment:
+      #- OLLAMA_HOST=0.0.0.0
+      #- OLLAMA_PORT=11434
+      #- OLLAMA_MODEL=nomic-embed-text
