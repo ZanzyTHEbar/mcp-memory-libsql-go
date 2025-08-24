@@ -15,6 +15,7 @@ import (
 	_ "github.com/tursodatabase/go-libsql"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/embeddings"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/errs"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 )
 
@@ -23,7 +24,7 @@ const defaultProject = "default"
 // NewDBManager creates a new database manager
 func NewDBManager(config *Config) (*DBManager, error) {
 	if config.EmbeddingDims <= 0 || config.EmbeddingDims > 65536 {
-		return nil, fmt.Errorf("{\"error\":{\"code\":\"INVALID_EMBEDDING_DIMS\",\"message\":\"EMBEDDING_DIMS must be between 1 and 65536 inclusive\",\"value\":%d}}", config.EmbeddingDims)
+		return nil, errs.InvalidArg("EMBEDDING_DIMS must be between 1 and 65536 inclusive", "value", config.EmbeddingDims)
 	}
 	manager := &DBManager{
 		config:        config,

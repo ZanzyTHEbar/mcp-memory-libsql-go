@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
+	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/errs"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/metrics"
 )
 
@@ -60,7 +61,9 @@ func (dm *DBManager) CreateEntities(ctx context.Context, projectName string, ent
 	// Auto-generate embeddings via provider when missing
 	if dm.provider != nil {
 		if dm.provider.Dimensions() != dm.config.EmbeddingDims {
-			return fmt.Errorf("{\"error\":{\"code\":\"EMBEDDING_DIMS_MISMATCH\",\"message\":\"Provider dims %d do not match EMBEDDING_DIMS %d\"}}", dm.provider.Dimensions(), dm.config.EmbeddingDims)
+			return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS", 
+				"providerDims", dm.provider.Dimensions(), 
+				"configDims", dm.config.EmbeddingDims)
 		}
 		inputs := make([]string, 0)
 		idxs := make([]int, 0)
@@ -73,10 +76,11 @@ func (dm *DBManager) CreateEntities(ctx context.Context, projectName string, ent
 		if len(inputs) > 0 {
 			vecs, pErr := dm.provider.Embed(ctx, inputs)
 			if pErr != nil {
-				return fmt.Errorf("{\"error\":{\"code\":\"EMBEDDINGS_PROVIDER_ERROR\",\"message\":%q}}", pErr.Error())
+				return errs.Internal(pErr, "operation", "embeddings_generation")
 			}
 			if len(vecs) != len(inputs) {
-				return fmt.Errorf("{\"error\":{\"code\":\"EMBEDDINGS_PROVIDER_ERROR\",\"message\":\"provider returned mismatched embeddings count\"}}")
+				return errs.Internal(nil, "message", "provider returned mismatched embeddings count", 
+					"expected", len(inputs), "got", len(vecs))
 			}
 			for j, idx := range idxs {
 				entities[idx].Embedding = vecs[j]
@@ -226,11 +230,13 @@ func (dm *DBManager) UpdateEntities(ctx context.Context, projectName string, upd
 		// If embedding still missing and provider exists, generate and update
 		if dm.provider != nil && len(u.Embedding) == 0 && len(u.ReplaceObservations) > 0 {
 			if dm.provider.Dimensions() != dm.config.EmbeddingDims {
-				return fmt.Errorf("{\"error\":{\"code\":\"EMBEDDING_DIMS_MISMATCH\",\"message\":\"Provider dims %d do not match EMBEDDING_DIMS %d\"}}", dm.provider.Dimensions(), dm.config.EmbeddingDims)
+				return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS", 
+					"providerDims", dm.provider.Dimensions(), 
+					"configDims", dm.config.EmbeddingDims)
 			}
 			vecs, pErr := dm.provider.Embed(ctx, []string{strings.Join(u.ReplaceObservations, "\n")})
 			if pErr != nil {
-				return fmt.Errorf("{\"error\":{\"code\":\"EMBEDDINGS_PROVIDER_ERROR\",\"message\":%q}}", pErr.Error())
+				return errs.Internal(pErr, "operation", "embeddings_generation", "entity", u.Name)
 			}
 			if len(vecs) == 1 {
 				vecStr, vErr := dm.vectorToString(vecs[0])

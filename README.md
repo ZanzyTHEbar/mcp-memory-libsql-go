@@ -1043,6 +1043,60 @@ Cursor/Cline SSE config:
   # SSE URL: http://localhost:8081/sse, Metrics: http://localhost:9091/healthz
   ```
 
+## Error Handling
+
+The server uses a typed error system for consistent error reporting across the MCP protocol. All errors are structured with canonical codes and JSON-safe serialization for backwards compatibility.
+
+### Error Codes
+
+The following canonical error codes are used throughout the system:
+
+- `INVALID_ARGUMENT`: Client-provided argument is invalid
+- `NOT_FOUND`: Requested resource was not found
+- `ALREADY_EXISTS`: Resource already exists
+- `PERMISSION_DENIED`: Client lacks permission for the operation
+- `UNAUTHENTICATED`: Client authentication failed
+- `FAILED_PRECONDITION`: Operation precondition not met (e.g., embedding dimensions mismatch)
+- `INTERNAL`: Server internal error
+- `UNAVAILABLE`: Service temporarily unavailable
+- `UNSUPPORTED`: Operation not supported
+- `CONFLICT`: Resource conflict
+
+### Error Format
+
+Errors maintain JSON compatibility for backwards compatibility:
+
+```json
+{
+  "error": {
+    "code": "INVALID_ARGUMENT",
+    "message": "EMBEDDING_DIMS must be between 1 and 65536 inclusive",
+    "value": 70000
+  }
+}
+```
+
+### MCP Protocol Mapping
+
+Typed errors are automatically translated to appropriate MCP protocol error codes:
+
+- `INVALID_ARGUMENT` → `-32602` (Invalid params)
+- `NOT_FOUND` → `-32001` (Not found)
+- `ALREADY_EXISTS`/`CONFLICT` → `-32002` (Conflict)  
+- `PERMISSION_DENIED` → `-32005` (Permission denied)
+- `UNAUTHENTICATED` → `-32006` (Unauthenticated)
+- `INTERNAL` → `-32603` (Internal error)
+- `UNAVAILABLE` → `-32003` (Unavailable)
+- `UNSUPPORTED` → `-32004` (Unsupported)
+
+### Common Error Scenarios
+
+- **Invalid embedding dimensions**: Configuration validation error with value context
+- **Provider mismatch**: When embedding provider dimensions don't match configured dimensions  
+- **Embeddings generation failure**: Internal errors from embedding providers with operation context
+- **Database connectivity**: Internal errors with connection details
+- **Authorization failures**: Permission denied errors in multi-project mode
+
 ## Architecture
 
 The project follows a clean, modular architecture:
