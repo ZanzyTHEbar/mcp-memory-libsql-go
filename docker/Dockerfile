@@ -23,7 +23,8 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath \
     -o /out/mcp-memory-libsql-go ./cmd/mcp-memory-libsql-go
 
 # Base final stage with shared runtime configuration (glibc)
-FROM debian:bookworm-slim AS base
+# Using trixie-slim to match GLIBC version from golang:1.24.6 build stage
+FROM debian:trixie-slim AS base
 
 # Allow pinning the runtime UID/GID for the unprivileged `app` user at build
 # time. Defaults to 1000/1000 which matches most Linux desktop users.
