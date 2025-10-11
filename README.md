@@ -1106,6 +1106,9 @@ The project follows a clean, modular architecture:
 - `internal/database/`: Database client and logic using libSQL
 - `internal/server/`: MCP server implementation
 - `internal/embeddings/`: Embeddings Providers implementations
+- `internal/errs/`: Typed error system with MCP protocol integration
+- `internal/metrics/`: Observability and metrics collection
+- `internal/buildinfo/`: Build and version information
 
 ## License
 
