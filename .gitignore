@@ -6,6 +6,8 @@ node_modules/
 dist/
 build/
 bin/
+mcp-memory-libsql-go
+integration-tester
 
 # Environment variables
 .env
