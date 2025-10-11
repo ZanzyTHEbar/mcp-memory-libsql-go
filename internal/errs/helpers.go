@@ -49,15 +49,6 @@ func Wrap(code Code, err error, kv ...interface{}) *Error {
 	return New(code, msg, err, kv...)
 }
 
-// AsTypedError checks if an error is a typed error and extracts it
-func AsTypedError(err error, target **Error) bool {
-	if e, ok := err.(*Error); ok {
-		*target = e
-		return true
-	}
-	return false
-}
-
 // New creates a new typed error with the given code, message, cause, and key-value context
 func New(code Code, message string, cause error, kv ...interface{}) *Error {
 	err := &Error{
