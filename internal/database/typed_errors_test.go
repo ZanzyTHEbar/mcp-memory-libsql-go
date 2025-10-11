@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/errs"
@@ -43,7 +44,7 @@ func TestTypedErrorsBackwardsCompatibility(t *testing.T) {
 
 			// Check if it's a typed error
 			var typedErr *errs.Error
-			if !errs.AsTypedError(err, &typedErr) {
+			if !errors.As(err, &typedErr) {
 				t.Errorf("Expected typed error, got: %T", err)
 				return
 			}
