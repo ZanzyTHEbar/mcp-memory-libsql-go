@@ -3,6 +3,13 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.5.1](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.5.0...v0.5.1) (2025-10-11)
+
+### 🐛 Bug Fixes
+
+* **docker:** update runtime base image to debian:trixie-slim for GLIBC 2.39+ compatibility ([0490861](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/049086128afec42d84569cf86e7c7b3136acfcae)), closes [#51](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/issues/51)
+* **docker:** update runtime base image to debian:trixie-slim for GLIBC 2.39+ compatibility ([0ee77bf](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/0ee77bf666d31260201dd112b852bbc67f6b4139))
+
 ## [0.5.0](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.4...v0.5.0) (2025-10-11)
 
 ### 🍕 Features
