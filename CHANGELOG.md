@@ -3,6 +3,13 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.5.2](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.5.1...v0.5.2) (2025-10-11)
+
+### 🐛 Bug Fixes
+
+* replace errs.AsTypedError with errors.As for standard error handling ([9e7188d](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/9e7188d4dd0908ff0b793bdbfd546a21b25c1b5d)), closes [#53](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/issues/53)
+* replace errs.AsTypedError with errors.As for standard error handling ([19b7ea5](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/19b7ea567c8c19b1a296859989a973fc2e10ec3f))
+
 ## [0.5.1](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.5.0...v0.5.1) (2025-10-11)
 
 ### 🐛 Bug Fixes
