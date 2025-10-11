@@ -3,6 +3,12 @@
 [![semantic versioning](https://img.shields.io/badge/semantic%20versioning-2.0.0-green.svg)](https://semver.org)
 > All notable changes to this project will be documented in this file
 
+## [0.5.0](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.4...v0.5.0) (2025-10-11)
+
+### 🍕 Features
+
+* add GitHub Copilot instructions for repository ([d85bd77](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/commit/d85bd77090d163f49de3ebf3a5ff6683358b5c06))
+
 ## [0.4.4](https://github.com/ZanzyTHEbar/mcp-memory-libsql-go/compare/v0.4.3...v0.4.4) (2025-08-18)
 
 ### 🤖 Build System
