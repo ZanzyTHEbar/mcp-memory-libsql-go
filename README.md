@@ -31,6 +31,60 @@ And more!
 - **Multi-Project Support**: Optionally, run in a mode that manages separate databases for multiple projects.
 - **Metrics (optional)**: No-op by default; enable Prometheus exporter with `METRICS_PROMETHEUS=true`
 
+## Library usage (import as a Go package)
+
+In addition to running as a server, this module exposes a stable library API at `github.com/ZanzyTHEbar/mcp-memory-libsql-go/pkg/memory`.
+This lets you embed the engine directly in your Go programs without MCP transports.
+
+Install:
+
+```bash
+go get github.com/ZanzyTHEbar/mcp-memory-libsql-go@latest
+```
+
+Minimal example:
+
+```go
+package main
+
+import (
+  "context"
+  "log"
+  "github.com/ZanzyTHEbar/mcp-memory-libsql-go/pkg/memory"
+)
+
+func main() {
+  cfg := &memory.Config{
+    URL:           "file:./libsql.db",
+    EmbeddingDims: 768, // pick dimensions appropriate for your embeddings model
+  }
+  svc, err := memory.NewService(cfg)
+  if err != nil { log.Fatal(err) }
+  defer svc.Close()
+
+  ctx := context.Background()
+  // Create entities
+  if err := svc.CreateEntities(ctx, "default", []memory.Entity{
+    {Name: "Task:1", EntityType: "Task", Observations: []string{"initial setup"}},
+    {Name: "Repo:acme/widgets", EntityType: "Repo", Observations: []string{"GitHub: https://github.com/acme/widgets"}},
+  }); err != nil { log.Fatal(err) }
+
+  // Create relation
+  if err := svc.CreateRelations(ctx, "default", []memory.Relation{
+    {From: "Repo:acme/widgets", To: "Task:1", RelationType: "tracks"},
+  }); err != nil { log.Fatal(err) }
+
+  // Search
+  ents, rels, err := svc.SearchText(ctx, "default", "setup", 10, 0)
+  if err != nil { log.Fatal(err) }
+  log.Printf("found %d entities, %d relations", len(ents), len(rels))
+}
+```
+
+Public types are defined in `pkg/memory/types.go`.
+Do not import any `internal/*` packages from your code; they are implementation details and not accessible to external modules by design per Go's `internal` visibility rules.
+If you previously imported `internal/apptype`, migrate to the public types in `pkg/memory` (e.g., `memory.Entity`, `memory.Relation`, `memory.UpdateEntitySpec`).
+
 ## Installation
 
 To install the `mcp-memory-libsql-go` binary to a standard location on your system, use the following command:

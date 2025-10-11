@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 
-	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/apptype"
 	"github.com/ZanzyTHEbar/mcp-memory-libsql-go/internal/database"
 )
 
@@ -25,33 +24,40 @@ func NewService(cfg *Config) (*Service, error) {
 func (s *Service) Close() error { return s.db.Close() }
 
 // CreateEntities inserts entities.
-func (s *Service) CreateEntities(ctx context.Context, project string, ents []apptype.Entity) error {
+func (s *Service) CreateEntities(ctx context.Context, project string, ents []Entity) error {
+	// Entity is a type alias to apptype.Entity; slices are identical types.
 	return s.db.CreateEntities(ctx, project, ents)
 }
 
 // CreateRelations inserts relations.
-func (s *Service) CreateRelations(ctx context.Context, project string, rels []apptype.Relation) error {
+func (s *Service) CreateRelations(ctx context.Context, project string, rels []Relation) error {
 	return s.db.CreateRelations(ctx, project, rels)
 }
 
 // SearchText performs text search via underlying DB.
-func (s *Service) SearchText(ctx context.Context, project string, query string, limit, offset int) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) SearchText(ctx context.Context, project string, query string, limit, offset int) ([]Entity, []Relation, error) {
 	return s.db.SearchNodes(ctx, project, query, limit, offset)
 }
 
 // SearchVector performs vector search.
-func (s *Service) SearchVector(ctx context.Context, project string, vector []float32, limit, offset int) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) SearchVector(ctx context.Context, project string, vector []float32, limit, offset int) ([]Entity, []Relation, error) {
 	return s.db.SearchNodes(ctx, project, vector, limit, offset)
 }
 
+// SearchSimilar returns entities ranked by vector distance from the given embedding.
+// Distance is cosine distance (lower is closer) when libSQL vector functions are available.
+func (s *Service) SearchSimilar(ctx context.Context, project string, embedding []float32, limit, offset int) ([]SearchResult, error) {
+	return s.db.SearchSimilar(ctx, project, embedding, limit, offset)
+}
+
 // OpenNodes fetches entities (and optionally relations) by names.
-func (s *Service) OpenNodes(ctx context.Context, project string, names []string, includeRelations bool) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) OpenNodes(ctx context.Context, project string, names []string, includeRelations bool) ([]Entity, []Relation, error) {
 	ents, err := s.db.GetEntities(ctx, project, names)
 	if err != nil {
 		return nil, nil, err
 	}
 	if !includeRelations {
-		return ents, []apptype.Relation{}, nil
+		return ents, []Relation{}, nil
 	}
 	rels, err := s.db.GetRelationsForEntities(ctx, project, ents)
 	if err != nil {
@@ -61,20 +67,20 @@ func (s *Service) OpenNodes(ctx context.Context, project string, names []string,
 }
 
 // Graph helpers
-func (s *Service) Neighbors(ctx context.Context, project string, names []string, direction string, limit int) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) Neighbors(ctx context.Context, project string, names []string, direction string, limit int) ([]Entity, []Relation, error) {
 	return s.db.GetNeighbors(ctx, project, names, direction, limit)
 }
 
-func (s *Service) Walk(ctx context.Context, project string, names []string, maxDepth int, direction string, limit int) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) Walk(ctx context.Context, project string, names []string, maxDepth int, direction string, limit int) ([]Entity, []Relation, error) {
 	return s.db.Walk(ctx, project, names, maxDepth, direction, limit)
 }
 
-func (s *Service) ShortestPath(ctx context.Context, project, from, to, direction string) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) ShortestPath(ctx context.Context, project, from, to, direction string) ([]Entity, []Relation, error) {
 	return s.db.ShortestPath(ctx, project, from, to, direction)
 }
 
 // ReadGraph returns recent entities + relations with limit.
-func (s *Service) ReadGraph(ctx context.Context, project string, limit int) ([]apptype.Entity, []apptype.Relation, error) {
+func (s *Service) ReadGraph(ctx context.Context, project string, limit int) ([]Entity, []Relation, error) {
 	return s.db.ReadGraph(ctx, project, limit)
 }
 
@@ -93,16 +99,16 @@ func (s *Service) DeleteRelation(ctx context.Context, project, source, target, r
 func (s *Service) DeleteEntities(ctx context.Context, project string, names []string) error {
 	return s.db.DeleteEntities(ctx, project, names)
 }
-func (s *Service) DeleteRelations(ctx context.Context, project string, rels []apptype.Relation) error {
+func (s *Service) DeleteRelations(ctx context.Context, project string, rels []Relation) error {
 	return s.db.DeleteRelations(ctx, project, rels)
 }
 func (s *Service) DeleteObservations(ctx context.Context, project, entity string, ids []int64, contents []string) (int64, error) {
 	return s.db.DeleteObservations(ctx, project, entity, ids, contents)
 }
-func (s *Service) UpdateEntities(ctx context.Context, project string, updates []apptype.UpdateEntitySpec) error {
+func (s *Service) UpdateEntities(ctx context.Context, project string, updates []UpdateEntitySpec) error {
 	return s.db.UpdateEntities(ctx, project, updates)
 }
-func (s *Service) UpdateRelations(ctx context.Context, project string, updates []apptype.UpdateRelationChange) error {
+func (s *Service) UpdateRelations(ctx context.Context, project string, updates []UpdateRelationChange) error {
 	return s.db.UpdateRelations(ctx, project, updates)
 }
 
@@ -111,3 +117,5 @@ func (s *Service) EnableHybridSearch(textWeight, vectorWeight, rrfK float64) {
 	s.db.EnableHybridSearch(textWeight, vectorWeight, rrfK)
 }
 func (s *Service) DisableHybridSearch() { s.db.DisableHybridSearch() }
+
+// No helpers needed: public types are aliases to internal types.
