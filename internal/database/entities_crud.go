@@ -61,8 +61,8 @@ func (dm *DBManager) CreateEntities(ctx context.Context, projectName string, ent
 	// Auto-generate embeddings via provider when missing
 	if dm.provider != nil {
 		if dm.provider.Dimensions() != dm.config.EmbeddingDims {
-			return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS", 
-				"providerDims", dm.provider.Dimensions(), 
+			return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS",
+				"providerDims", dm.provider.Dimensions(),
 				"configDims", dm.config.EmbeddingDims)
 		}
 		inputs := make([]string, 0)
@@ -79,7 +79,7 @@ func (dm *DBManager) CreateEntities(ctx context.Context, projectName string, ent
 				return errs.Internal(pErr, "operation", "embeddings_generation")
 			}
 			if len(vecs) != len(inputs) {
-				return errs.Internal(nil, "message", "provider returned mismatched embeddings count", 
+				return errs.Internal(nil, "message", "provider returned mismatched embeddings count",
 					"expected", len(inputs), "got", len(vecs))
 			}
 			for j, idx := range idxs {
@@ -230,8 +230,8 @@ func (dm *DBManager) UpdateEntities(ctx context.Context, projectName string, upd
 		// If embedding still missing and provider exists, generate and update
 		if dm.provider != nil && len(u.Embedding) == 0 && len(u.ReplaceObservations) > 0 {
 			if dm.provider.Dimensions() != dm.config.EmbeddingDims {
-				return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS", 
-					"providerDims", dm.provider.Dimensions(), 
+				return errs.FailedPrecondition("Provider dims do not match EMBEDDING_DIMS",
+					"providerDims", dm.provider.Dimensions(),
 					"configDims", dm.config.EmbeddingDims)
 			}
 			vecs, pErr := dm.provider.Embed(ctx, []string{strings.Join(u.ReplaceObservations, "\n")})

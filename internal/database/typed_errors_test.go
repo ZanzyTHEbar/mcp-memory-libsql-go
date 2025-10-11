@@ -10,22 +10,22 @@ import (
 func TestTypedErrorsBackwardsCompatibility(t *testing.T) {
 	// Test that NewDBManager returns proper typed errors for invalid embedding dims
 	tests := []struct {
-		name         string
+		name          string
 		embeddingDims int
-		wantCode     errs.Code
-		wantJSON     bool
+		wantCode      errs.Code
+		wantJSON      bool
 	}{
 		{
-			name:         "too small dims",
+			name:          "too small dims",
 			embeddingDims: 0,
-			wantCode:     errs.CodeInvalidArgument,
-			wantJSON:     true,
+			wantCode:      errs.CodeInvalidArgument,
+			wantJSON:      true,
 		},
 		{
-			name:         "too large dims", 
+			name:          "too large dims",
 			embeddingDims: 70000,
-			wantCode:     errs.CodeInvalidArgument,
-			wantJSON:     true,
+			wantCode:      errs.CodeInvalidArgument,
+			wantJSON:      true,
 		},
 	}
 
@@ -34,25 +34,25 @@ func TestTypedErrorsBackwardsCompatibility(t *testing.T) {
 			config := &Config{
 				EmbeddingDims: tt.embeddingDims,
 			}
-			
+
 			_, err := NewDBManager(config)
 			if err == nil {
 				t.Errorf("NewDBManager() expected error but got nil")
 				return
 			}
-			
+
 			// Check if it's a typed error
 			var typedErr *errs.Error
 			if !errs.AsTypedError(err, &typedErr) {
 				t.Errorf("Expected typed error, got: %T", err)
 				return
 			}
-			
+
 			// Check error code
 			if typedErr.Code() != tt.wantCode {
 				t.Errorf("Error code = %v, want %v", typedErr.Code(), tt.wantCode)
 			}
-			
+
 			// Check JSON backwards compatibility
 			if tt.wantJSON {
 				errorStr := err.Error()
@@ -60,16 +60,16 @@ func TestTypedErrorsBackwardsCompatibility(t *testing.T) {
 				if err := json.Unmarshal([]byte(errorStr), &errorData); err != nil {
 					t.Errorf("Error.Error() output is not valid JSON: %v", err)
 				}
-				
+
 				errorInfo, ok := errorData["error"].(map[string]interface{})
 				if !ok {
 					t.Errorf("Error.Error() missing 'error' field")
 				}
-				
+
 				if code, ok := errorInfo["code"].(string); !ok || code != string(tt.wantCode) {
 					t.Errorf("Error.Error() code = %v, want %v", code, string(tt.wantCode))
 				}
-				
+
 				// Check for value in context
 				if value, ok := errorInfo["value"].(float64); !ok || int(value) != tt.embeddingDims {
 					t.Errorf("Error.Error() value = %v, want %v", value, tt.embeddingDims)

@@ -65,7 +65,7 @@ func New(code Code, message string, cause error, kv ...interface{}) *Error {
 		message: message,
 		cause:   cause,
 	}
-	
+
 	// Parse key-value pairs
 	if len(kv) > 0 {
 		err.kv = make(map[string]interface{})
@@ -77,6 +77,6 @@ func New(code Code, message string, cause error, kv ...interface{}) *Error {
 			}
 		}
 	}
-	
+
 	return err
 }

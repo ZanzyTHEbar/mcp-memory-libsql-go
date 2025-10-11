@@ -23,7 +23,7 @@ func TestErrorCodes(t *testing.T) {
 		{"unsupported", CodeUnsupported, "UNSUPPORTED"},
 		{"conflict", CodeConflict, "CONFLICT"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.code.String(); got != tt.want {
@@ -70,29 +70,29 @@ func TestErrorHelpers(t *testing.T) {
 			wantJSONCode: "INTERNAL",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.err.Code() != tt.wantCode {
 				t.Errorf("Error.Code() = %v, want %v", tt.err.Code(), tt.wantCode)
 			}
-			
+
 			if tt.err.Message() != tt.wantMessage {
 				t.Errorf("Error.Message() = %v, want %v", tt.err.Message(), tt.wantMessage)
 			}
-			
+
 			// Test JSON output for backwards compatibility
 			errorStr := tt.err.Error()
 			var errorData map[string]interface{}
 			if err := json.Unmarshal([]byte(errorStr), &errorData); err != nil {
 				t.Errorf("Error.Error() output is not valid JSON: %v", err)
 			}
-			
+
 			errorInfo, ok := errorData["error"].(map[string]interface{})
 			if !ok {
 				t.Errorf("Error.Error() missing 'error' field")
 			}
-			
+
 			if code, ok := errorInfo["code"].(string); !ok || code != tt.wantJSONCode {
 				t.Errorf("Error.Error() code = %v, want %v", code, tt.wantJSONCode)
 			}
@@ -102,10 +102,10 @@ func TestErrorHelpers(t *testing.T) {
 
 func TestMCPErrorTranslation(t *testing.T) {
 	tests := []struct {
-		name      string
-		err       *Error
-		wantCode  MCPErrorCode
-		wantMsg   string
+		name     string
+		err      *Error
+		wantCode MCPErrorCode
+		wantMsg  string
 	}{
 		{
 			name:     "invalid argument to invalid params",
@@ -126,7 +126,7 @@ func TestMCPErrorTranslation(t *testing.T) {
 			wantMsg:  "system error",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code, msg := ToMCPError(tt.err)
@@ -143,17 +143,17 @@ func TestMCPErrorTranslation(t *testing.T) {
 func TestErrorUnwrapping(t *testing.T) {
 	cause := errors.New("underlying error")
 	err := Internal(cause, "context", "test")
-	
+
 	// Test Unwrap
 	if unwrapped := errors.Unwrap(err); unwrapped != cause {
 		t.Errorf("errors.Unwrap() = %v, want %v", unwrapped, cause)
 	}
-	
+
 	// Test Is
 	if !errors.Is(err, cause) {
 		t.Errorf("errors.Is() = false, want true")
 	}
-	
+
 	// Test As
 	var typed *Error
 	if !errors.As(err, &typed) {

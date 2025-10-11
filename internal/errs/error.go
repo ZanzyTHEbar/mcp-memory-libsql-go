@@ -49,19 +49,19 @@ func (e *Error) Error() string {
 			"message": e.message,
 		},
 	}
-	
+
 	// Add key-value context to the error data
 	if len(e.kv) > 0 {
 		for k, v := range e.kv {
 			errorData["error"].(map[string]interface{})[k] = v
 		}
 	}
-	
+
 	// JSON encode for backwards compatibility
 	if b, err := json.Marshal(errorData); err == nil {
 		return string(b)
 	}
-	
+
 	// Fallback if JSON encoding fails
 	return fmt.Sprintf(`{"error":{"code":"%s","message":"%s"}}`, e.code, e.message)
 }
